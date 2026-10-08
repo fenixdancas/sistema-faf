@@ -1,0 +1,1375 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PRISMA • Gestão FaF</title>
+<style>
+:root{--ink:#17246f;--blue:#6288d5;--violet:#766fd1;--gold:#b99549;--glass:rgba(250,252,255,.78)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Georgia,"Times New Roman",serif;color:var(--ink)}
+button{font:inherit}
+.screen{display:none;min-height:100vh}
+.screen.on{display:block}
+
+/* LOGIN: usa a arte aprovada integralmente. */
+#login{position:relative;background:#bfd3f0 url("./assets/f86f36bad8e1137ba5db2ae8.png") center/cover no-repeat;min-height:100vh}
+.login-hit{position:absolute;left:48.2%;top:61.4%;width:31.8%;height:7.3%;border:0;background:transparent;border-radius:18px;cursor:pointer}
+.login-hit:focus-visible{outline:3px solid #fff;box-shadow:0 0 0 5px rgba(72,72,180,.45)}
+
+/* SELEÇÃO: apenas escolhe o evento. */
+#select{background:
+ radial-gradient(circle at 75% 10%,rgba(255,255,255,.68),transparent 30%),
+ linear-gradient(135deg,#dce8f8,#bfd3ee 54%,#e6eef9);padding:5vh 5vw}
+.selectbox{max-width:980px;margin:auto;text-align:center}
+.selectbox h1{font-size:30px;font-weight:500;margin:12px 0 30px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.choice{min-height:310px;border:1px solid rgba(185,149,73,.42);background:rgba(255,255,255,.66);border-radius:22px;display:flex;align-items:center;justify-content:center;padding:28px;box-shadow:0 12px 32px rgba(42,58,105,.09);cursor:pointer;transition:.18s}
+.choice:hover,.choice:focus-visible{transform:translateY(-2px);box-shadow:0 16px 36px rgba(42,58,105,.15);outline:none}
+.choice img{max-width:88%;max-height:245px;object-fit:contain}
+.back-select{margin-top:24px;border:0;background:transparent;color:var(--ink);text-decoration:underline;cursor:pointer}
+
+/* AMBIENTE FAF: mesma família visual azul suave do login, sem repetir conteúdo do login. */
+#app{background:
+ radial-gradient(circle at 58% 18%,rgba(255,255,255,.62),transparent 27%),
+ radial-gradient(circle at 82% 76%,rgba(210,224,248,.72),transparent 31%),
+ linear-gradient(135deg,#c9dcf3 0%,#b9d1ef 46%,#dce9f8 100%);overflow:hidden}
+.shell{min-height:100vh;display:grid;grid-template-columns:270px minmax(0,1fr)}
+.side{background:rgba(249,251,255,.86);border-right:1px solid rgba(185,149,73,.48);padding:20px 16px;backdrop-filter:blur(8px)}
+.brand{height:145px;display:flex;align-items:center;justify-content:center;padding:4px 12px 12px}
+.brand img{width:190px;height:130px;object-fit:contain}
+.nav{display:grid;gap:7px}
+.nav-btn{height:56px;border:0;background:transparent;color:var(--ink);border-radius:13px;text-align:left;padding:0 18px;font-size:17px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.nav-btn:hover{background:rgba(105,126,207,.10)}
+.nav-btn.active{color:#fff;background:linear-gradient(90deg,#5c82d8,#7c74d4)}
+.ico{width:26px;text-align:center;font-size:22px}
+.main{min-width:0;position:relative;padding:16px 24px 24px}
+.top{height:62px;display:flex;justify-content:flex-end;align-items:center}
+.topgroup{display:flex;align-items:stretch;filter:drop-shadow(0 8px 20px rgba(55,70,120,.08))}
+.pill{height:50px;background:rgba(250,252,255,.82);border:1px solid rgba(255,255,255,.8);display:flex;align-items:center;padding:0 18px;font-size:17px}
+.event{border-radius:15px 0 0 15px;border-right:1px solid rgba(185,149,73,.40)}
+.admin{border-radius:0 15px 15px 0;min-width:190px;border:0;cursor:pointer;color:var(--ink)}
+.workspace{position:absolute;left:24px;right:24px;top:94px;bottom:22px;border-radius:24px;
+ background:rgba(244,248,255,.16);border:1px solid rgba(255,255,255,.30);overflow:hidden}
+.workspace:before,.workspace:after{content:"";position:absolute;inset:auto;width:42vw;height:42vw;border-radius:50%;filter:blur(24px);opacity:.14;pointer-events:none}
+.workspace:before{left:-22vw;top:-18vw;background:#fff}
+.workspace:after{right:-22vw;bottom:-24vw;background:#6d83d6}
+.page{display:none;position:absolute;inset:0;padding:28px}
+.page.active{display:block}
+.page-title{font-size:28px;font-weight:500}
+.admin-menu{display:none;position:absolute;right:24px;top:72px;background:rgba(252,253,255,.96);border:1px solid rgba(185,149,73,.28);border-radius:14px;padding:8px;min-width:190px;box-shadow:0 12px 30px rgba(45,55,105,.13);z-index:5}
+.admin-menu.open{display:block}
+.admin-menu button{width:100%;border:0;background:transparent;color:var(--ink);padding:11px 12px;text-align:left;border-radius:9px;cursor:pointer}
+.admin-menu button:hover{background:rgba(100,120,200,.10)}
+.notice{max-width:520px;margin:120px auto 0;padding:22px 24px;border-radius:18px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.72);font-size:18px;line-height:1.5}
+
+@media(max-width:850px){
+ .shell{grid-template-columns:210px minmax(0,1fr)} .side{padding:14px 9px}
+ .brand img{width:155px} .nav-btn{font-size:15px;padding:0 12px}
+ .event{display:none} .admin{border-radius:15px} .choices{grid-template-columns:1fr}
+}
+
+.inscricoes-wrap{height:100%;display:flex;flex-direction:column;gap:18px}
+.inscricoes-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.inscricoes-head h2{margin:0;font-size:30px;font-weight:500;color:var(--ink)}
+.forms-chip{display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.56);border:1px solid rgba(255,255,255,.75);font-size:14px}
+.dot{width:9px;height:9px;border-radius:50%;background:#6f8bd6;box-shadow:0 0 0 4px rgba(111,139,214,.12)}
+.inscricoes-tools{display:flex;align-items:center;gap:12px}
+.searchbox{flex:1;max-width:520px;height:46px;border:1px solid rgba(91,108,172,.20);border-radius:14px;background:rgba(255,255,255,.66);padding:0 16px;color:var(--ink);font:inherit;outline:none}
+.searchbox:focus{border-color:rgba(91,108,172,.55);box-shadow:0 0 0 3px rgba(91,108,172,.08)}
+.sync-btn{height:46px;border:1px solid rgba(91,108,172,.18);border-radius:14px;background:rgba(255,255,255,.70);color:var(--ink);padding:0 17px;cursor:pointer}
+.sync-btn:hover{background:rgba(255,255,255,.88)}
+.inscricoes-table{flex:1;min-height:260px;border-radius:18px;overflow:hidden;background:rgba(255,255,255,.50);border:1px solid rgba(255,255,255,.72)}
+.inscricoes-table table{width:100%;border-collapse:collapse}
+.inscricoes-table th{height:52px;text-align:left;padding:0 18px;font-size:13px;letter-spacing:.03em;font-weight:600;background:rgba(255,255,255,.46);border-bottom:1px solid rgba(91,108,172,.12)}
+.inscricoes-table td{padding:16px 18px;border-bottom:1px solid rgba(91,108,172,.09)}
+.empty-state{height:230px;display:flex;align-items:center;justify-content:center;text-align:center;color:rgba(23,36,111,.66);padding:30px}
+.empty-state strong{display:block;font-size:18px;font-weight:500;margin-bottom:7px;color:var(--ink)}
+.empty-state span{font-size:14px}
+@media(max-width:850px){.inscricoes-head,.inscricoes-tools{align-items:stretch;flex-direction:column}.searchbox{max-width:none;width:100%}}
+
+
+/* Estruturas-base das próximas telas. O conteúdo detalhado será definido na revisão de cada aba. */
+.module-wrap{height:100%;display:flex;flex-direction:column;gap:18px}
+.module-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.module-head h2{margin:0;font-size:30px;font-weight:500;color:var(--ink)}
+.module-note{font-size:13px;color:rgba(23,36,111,.66)}
+.module-tools{display:flex;gap:12px;align-items:center}
+.module-search{flex:1;max-width:520px;height:46px;border:1px solid rgba(91,108,172,.20);border-radius:14px;background:rgba(255,255,255,.66);padding:0 16px;color:var(--ink);font:inherit;outline:none}
+.module-search:focus{border-color:rgba(91,108,172,.55);box-shadow:0 0 0 3px rgba(91,108,172,.08)}
+.module-panel{flex:1;min-height:260px;border-radius:18px;overflow:hidden;background:rgba(255,255,255,.50);border:1px solid rgba(255,255,255,.72)}
+.module-panel table{width:100%;border-collapse:collapse}
+.module-panel th{height:52px;text-align:left;padding:0 18px;font-size:13px;letter-spacing:.03em;font-weight:600;background:rgba(255,255,255,.46);border-bottom:1px solid rgba(91,108,172,.12)}
+.module-empty{min-height:230px;height:calc(100% - 52px);display:flex;align-items:center;justify-content:center;text-align:center;color:rgba(23,36,111,.64);padding:30px}
+.module-empty strong{display:block;font-size:18px;font-weight:500;margin-bottom:7px;color:var(--ink)}
+.module-empty span{font-size:14px}
+.juri-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.juri-box{border-radius:18px;background:rgba(255,255,255,.50);border:1px solid rgba(255,255,255,.72);padding:22px}
+.juri-box h3{margin:0 0 8px;font-size:19px;font-weight:500}
+.juri-box p{margin:0;color:rgba(23,36,111,.64);font-size:14px;line-height:1.45}
+.results-panel{flex:1;border-radius:18px;background:rgba(255,255,255,.50);border:1px solid rgba(255,255,255,.72);display:flex;align-items:center;justify-content:center;text-align:center;padding:30px}
+@media(max-width:850px){.module-head,.module-tools{align-items:stretch;flex-direction:column}.module-search{max-width:none;width:100%}.juri-grid{grid-template-columns:1fr}}
+
+
+.inscricao-fields{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:18px;background:rgba(255,255,255,.48);border-top:1px solid rgba(91,108,172,.10)}
+.inscricao-fields .field{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.48)}
+.inscricao-fields b{display:block;font-size:12px;margin-bottom:5px;opacity:.65}
+@media(max-width:900px){.inscricao-fields{grid-template-columns:1fr}}
+
+
+.split-tabs{display:flex;gap:9px;flex-wrap:wrap}
+.split-tab{border:1px solid rgba(91,108,172,.16);background:rgba(255,255,255,.55);color:var(--ink);border-radius:999px;padding:9px 16px;cursor:pointer}
+.split-tab.active{background:linear-gradient(90deg,#5c82d8,#7c74d4);color:white;border-color:transparent}
+.group-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;overflow:auto;padding-bottom:4px}
+.group-card{background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.76);border-radius:17px;padding:17px}
+.group-card h3{margin:0 0 12px;font-size:18px;font-weight:500}
+.dance-row{padding:11px 0;border-top:1px solid rgba(91,108,172,.10)}
+.dance-row:first-of-type{border-top:0}
+.dance-row b{display:block;font-size:14px;font-weight:600}
+.dance-row small{display:block;margin-top:4px;color:rgba(23,36,111,.66)}
+.jury-sheet{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.score-card{background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.76);border-radius:17px;padding:17px}
+.score-card h3{margin:0 0 12px;font-size:17px;font-weight:500}
+.score-line{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid rgba(91,108,172,.09);font-size:14px}
+.score-line:first-of-type{border-top:0}
+.result-tabs{display:flex;gap:9px;flex-wrap:wrap}
+.result-tab{border:1px solid rgba(91,108,172,.16);background:rgba(255,255,255,.55);color:var(--ink);border-radius:999px;padding:9px 15px}
+.result-board{flex:1;border-radius:18px;background:rgba(255,255,255,.50);border:1px solid rgba(255,255,255,.72);overflow:hidden}
+.result-board table{width:100%;border-collapse:collapse}
+.result-board th{height:50px;text-align:left;padding:0 16px;font-size:13px;background:rgba(255,255,255,.46)}
+.result-board td{padding:14px 16px;border-top:1px solid rgba(91,108,172,.09);font-size:14px}
+@media(max-width:900px){.group-grid,.jury-sheet{grid-template-columns:1fr}}
+
+
+.juror-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.juror-card{position:relative;overflow:hidden;padding:0;border:1px solid rgba(255,255,255,.78);border-radius:16px;background:rgba(255,255,255,.42);cursor:pointer;box-shadow:0 8px 25px rgba(45,61,122,.08);min-height:190px}
+.juror-card img{width:100%;height:100%;min-height:190px;object-fit:cover;display:block}
+.juror-card span{position:absolute;left:8px;right:8px;bottom:8px;padding:7px 8px;border-radius:10px;background:rgba(8,15,39,.72);color:#fff;font-size:12px;backdrop-filter:blur(5px)}
+.juror-card:hover{transform:translateY(-2px)}
+.jury-workspace{display:flex;flex-direction:column;gap:14px}
+.jury-title{display:flex;align-items:baseline;gap:12px}
+.jury-title strong{font-size:18px;font-weight:600}.jury-title span{font-size:13px;opacity:.65}
+@media(max-width:1100px){.juror-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:650px){.juror-grid{grid-template-columns:repeat(2,1fr)}}
+
+
+/* Rolagem interna da tela Júri */
+#page-juri{
+  overflow-y:auto !important;
+  overflow-x:hidden;
+  scrollbar-gutter:stable;
+  padding-bottom:36px;
+}
+#page-juri .module-wrap{
+  min-height:max-content;
+  padding-bottom:42px;
+}
+#page-juri::-webkit-scrollbar{width:10px}
+#page-juri::-webkit-scrollbar-track{background:rgba(255,255,255,.22);border-radius:10px}
+#page-juri::-webkit-scrollbar-thumb{background:rgba(86,105,178,.38);border-radius:10px}
+
+
+.jury-access-link{display:block;margin:12px auto 0;border:0;background:transparent;color:var(--ink);cursor:pointer;font-size:14px}
+.jury-login-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px;background:radial-gradient(circle at 72% 12%,rgba(255,255,255,.72),transparent 30%),linear-gradient(135deg,#dce8f8,#bfd3ee 54%,#e6eef9)}
+.jury-login-card{width:min(430px,92vw);padding:34px;border-radius:24px;background:rgba(252,253,255,.76);border:1px solid rgba(255,255,255,.9);box-shadow:0 18px 50px rgba(42,58,105,.13);backdrop-filter:blur(10px)}
+.jury-login-card h1{margin:0;text-align:center;font-size:29px;font-weight:500}.jury-login-card p{text-align:center;margin:8px 0 28px;opacity:.66}
+.jury-login-card label{display:block;font-size:13px;margin:14px 0}.jury-login-card input{display:block;width:100%;height:48px;margin-top:7px;border:1px solid rgba(91,108,172,.22);border-radius:13px;background:rgba(255,255,255,.75);padding:0 14px;font:inherit;color:var(--ink);outline:none}
+.jury-enter{width:100%;height:48px;margin-top:12px;border:0;border-radius:13px;background:linear-gradient(90deg,#5c82d8,#7c74d4);color:white;cursor:pointer}
+.jury-back{display:block;margin:14px auto 0;border:0;background:transparent;color:var(--ink);text-decoration:underline;cursor:pointer}
+.jury-user-shell{min-height:100vh;background:radial-gradient(circle at 70% 12%,rgba(255,255,255,.65),transparent 30%),linear-gradient(135deg,#c9dcf3,#b9d1ef 48%,#dce9f8)}
+.jury-user-top{height:74px;padding:0 5vw;display:flex;align-items:center;justify-content:space-between;background:rgba(250,252,255,.75);border-bottom:1px solid rgba(185,149,73,.32)}
+.jury-user-top div{display:flex;align-items:baseline;gap:15px}.jury-user-top span{font-size:14px;opacity:.65}.jury-user-top button{border:0;background:transparent;color:var(--ink);cursor:pointer}
+.jury-user-main{max-width:1100px;margin:auto;padding:36px 5vw}.jury-user-heading{display:flex;justify-content:space-between;align-items:baseline;gap:15px}.jury-user-heading h1{font-weight:500;margin:0 0 24px}
+.jury-progress{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}.jury-progress div{padding:18px;border-radius:16px;background:rgba(255,255,255,.56);border:1px solid rgba(255,255,255,.78);display:flex;justify-content:space-between}.jury-progress span{font-size:22px}
+.jury-eval-list{min-height:360px;border-radius:20px;background:rgba(255,255,255,.48);border:1px solid rgba(255,255,255,.76);padding:20px}.jury-empty{height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.jury-empty span{font-size:14px;opacity:.65;margin-top:7px}
+
+
+.module-note{font-size:13px;opacity:.65}
+.supporter-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.supporter-card{height:120px;padding:10px;border:1px solid rgba(255,255,255,.78);border-radius:16px;background:rgba(255,255,255,.52);cursor:pointer;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.supporter-card img{max-width:100%;max-height:75px;object-fit:contain}.supporter-card span{font-size:12px;color:var(--ink)}
+.highlight-tabs{display:flex;gap:9px}
+.highlight-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr);gap:14px;min-height:0}
+.highlight-eval,.highlight-result{background:rgba(255,255,255,.50);border:1px solid rgba(255,255,255,.76);border-radius:18px;padding:18px}
+.highlight-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:16px}.highlight-head div{display:flex;flex-direction:column;gap:4px}.highlight-head div span,.highlight-progress{font-size:12px;opacity:.65}
+.highlight-fields{display:grid;grid-template-columns:1fr 1fr;gap:13px}.highlight-fields label{font-size:12px}.highlight-fields input,.highlight-fields select,.highlight-fields textarea{display:block;width:100%;margin-top:6px;border:1px solid rgba(91,108,172,.18);border-radius:11px;background:rgba(255,255,255,.72);padding:10px;font:inherit;color:var(--ink)}.comment-field{grid-column:1/-1}
+.highlight-result h3{margin:0 0 13px;font-weight:500}.result-categories{display:flex;flex-wrap:wrap;gap:7px}.result-categories span{padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.68);font-size:12px}
+.highlight-empty{min-height:180px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.highlight-empty span{font-size:13px;opacity:.62;margin-top:5px}
+.rule-note{font-size:12px;line-height:1.45;padding:11px;border-radius:11px;background:rgba(255,255,255,.55);opacity:.75}
+#page-destaques{overflow-y:auto!important;overflow-x:hidden;padding-bottom:36px}
+@media(max-width:950px){.supporter-grid{grid-template-columns:repeat(2,1fr)}.highlight-layout{grid-template-columns:1fr}.highlight-fields{grid-template-columns:1fr}.comment-field{grid-column:auto}}
+
+#page-inicio{overflow-y:auto!important;overflow-x:hidden;padding-bottom:38px}.home-wrap{display:flex;flex-direction:column;gap:14px}.home-head{display:flex;justify-content:space-between}.home-head h2{margin:0;font-weight:500}.home-head span{font-size:13px;opacity:.65}.home-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.home-stat,.home-panel{background:rgba(255,255,255,.48);border:1px solid rgba(255,255,255,.76);border-radius:17px;padding:17px}.home-stat span{font-size:12px;opacity:.67}.home-stat strong{display:block;margin-top:5px;font-size:26px;font-weight:500}.home-columns,.home-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px}.home-panel h3{margin:0;font-size:17px;font-weight:500}.home-empty{min-height:76px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;opacity:.58}.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}.status-grid div{padding:11px;border-radius:12px;background:rgba(255,255,255,.53);display:flex;justify-content:space-between}.check-line{display:flex;gap:7px;margin-top:10px}.check-line span{padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.52);font-size:11px}@media(max-width:850px){.home-summary{grid-template-columns:repeat(2,1fr)}.home-columns,.home-bottom{grid-template-columns:1fr}}
+
+.faft-shell{min-height:100vh;display:grid;grid-template-columns:250px 1fr;background:linear-gradient(135deg,#d8e7f7,#c2d7ef 55%,#e5eef9)}
+.faft-side{padding:22px 15px;background:rgba(250,252,255,.86);border-right:1px solid rgba(185,149,73,.42)}
+.faft-brand{height:110px;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:600;color:var(--ink)}
+.faft-nav{display:grid;gap:7px}.faft-nav-btn{height:52px;border:0;border-radius:13px;background:transparent;color:var(--ink);text-align:left;padding:0 18px;cursor:pointer}.faft-nav-btn.active{background:linear-gradient(90deg,#5c82d8,#7c74d4);color:#fff}
+.faft-main{padding:16px 24px}.faft-top{height:62px;display:flex;align-items:center;justify-content:flex-end;gap:20px}.faft-top button{border:0;background:rgba(255,255,255,.58);border-radius:12px;padding:10px 14px;color:var(--ink);cursor:pointer}
+.faft-work{height:calc(100vh - 100px);border-radius:24px;background:rgba(244,248,255,.18);border:1px solid rgba(255,255,255,.34);padding:28px;overflow:auto}
+.faft-page{display:none}.faft-page.active{display:block}.faft-page h2{font-weight:500;margin:0 0 6px}.faft-page p{margin:0;opacity:.65}.faft-note{margin-top:28px;padding:22px;border-radius:16px;background:rgba(255,255,255,.48);font-size:14px}
+@media(max-width:800px){.faft-shell{grid-template-columns:190px 1fr}}
+
+
+.main-home-btn{margin-left:12px;border:1px solid rgba(91,108,172,.14);background:rgba(255,255,255,.54);color:var(--ink);border-radius:11px;padding:9px 13px;cursor:pointer;font:inherit;font-size:12px}
+.main-home-btn:hover{background:rgba(255,255,255,.76)}
+
+
+.external-access{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.access-pill{border:1px solid rgba(91,108,172,.16);background:rgba(255,255,255,.55);color:var(--ink);border-radius:999px;padding:9px 16px;cursor:pointer}
+.role-event-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px;background:radial-gradient(circle at 72% 12%,rgba(255,255,255,.72),transparent 30%),linear-gradient(135deg,#dce8f8,#bfd3ee 54%,#e6eef9)}
+.role-event-card{width:min(650px,92vw);padding:32px;border-radius:24px;background:rgba(252,253,255,.76);border:1px solid rgba(255,255,255,.9);box-shadow:0 18px 50px rgba(42,58,105,.13)}
+.role-event-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.role-event-head h1{margin:0;font-weight:500}.role-event-head span{font-size:13px;opacity:.65}.role-event-head button,.role-top-actions button{border:0;background:rgba(255,255,255,.58);border-radius:10px;padding:8px 11px;color:var(--ink);cursor:pointer}
+.role-event-options{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:24px}.role-event-options button{min-height:130px;border:1px solid rgba(255,255,255,.85);border-radius:18px;background:rgba(255,255,255,.54);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center}.role-event-options strong{font-size:28px;font-weight:500}.role-event-options span{font-size:12px;opacity:.65;margin-top:5px}
+.role-work-shell{min-height:100vh;background:radial-gradient(circle at 70% 12%,rgba(255,255,255,.65),transparent 30%),linear-gradient(135deg,#c9dcf3,#b9d1ef 48%,#dce9f8)}
+.role-work-top{height:74px;padding:0 5vw;display:flex;align-items:center;justify-content:space-between;background:rgba(250,252,255,.75);border-bottom:1px solid rgba(185,149,73,.32)}.role-work-top div:first-child{display:flex;align-items:baseline;gap:14px}.role-work-top span{font-size:13px;opacity:.65}.role-top-actions{display:flex;gap:8px}
+.role-work-main{max-width:1150px;margin:auto;padding:34px 5vw 60px}.role-evaluation-card{padding:18px;border-radius:20px;background:rgba(255,255,255,.48);border:1px solid rgba(255,255,255,.76)}.role-presentation{padding:14px;border-radius:13px;background:rgba(255,255,255,.54);margin-bottom:14px}.role-presentation strong,.role-presentation span{display:block}.role-presentation span{font-size:12px;opacity:.62;margin-top:4px}
+.score-line input{width:66px;border:1px solid rgba(91,108,172,.18);border-radius:9px;background:rgba(255,255,255,.72);padding:6px;text-align:center;color:var(--ink)}
+.role-comments{display:block;font-size:12px;margin-top:14px}.role-comments textarea{display:block;width:100%;margin-top:6px;border:1px solid rgba(91,108,172,.18);border-radius:12px;background:rgba(255,255,255,.72);padding:11px;font:inherit;color:var(--ink)}
+.supporter-score-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.supporter-score-grid label{font-size:12px}.supporter-score-grid input{display:block;width:100%;margin-top:6px;border:1px solid rgba(91,108,172,.18);border-radius:11px;background:rgba(255,255,255,.72);padding:11px;font:inherit;color:var(--ink)}
+.save-evaluation{margin-top:14px;border:0;border-radius:12px;background:linear-gradient(90deg,#5c82d8,#7c74d4);color:#fff;padding:11px 18px;cursor:pointer}
+.admin-progress-line{display:grid;grid-template-columns:auto auto auto auto;gap:9px;align-items:center;padding:11px 14px;border-radius:13px;background:rgba(255,255,255,.46);font-size:12px}.admin-progress-line strong{font-size:14px;font-weight:600}
+.module-panel{background:rgba(255,255,255,.48);border:1px solid rgba(255,255,255,.76);border-radius:17px;overflow:hidden}.module-panel table{width:100%;border-collapse:collapse}.module-panel th{padding:14px;text-align:left;font-size:12px}.module-empty{padding:35px;text-align:center;font-size:13px;opacity:.6}
+@media(max-width:760px){.role-event-options,.supporter-score-grid{grid-template-columns:1fr}.admin-progress-line{grid-template-columns:1fr auto}}
+
+.type-view-hidden{display:none!important}.split-tab{transition:background .15s ease,color .15s ease}.split-tab:not(.active){background:rgba(255,255,255,.55)!important;color:var(--ink)!important}.split-tab.active{background:linear-gradient(90deg,#5c82d8,#7c74d4)!important;color:#fff!important}
+
+.test-fab{position:fixed;right:22px;bottom:20px;z-index:90;border:0;border-radius:999px;padding:12px 18px;background:linear-gradient(90deg,#5c82d8,#7c74d4);color:white;box-shadow:0 10px 28px rgba(42,58,105,.2);cursor:pointer}
+.test-panel{display:none;position:fixed;right:22px;bottom:76px;z-index:100;width:min(620px,calc(100vw - 44px));max-height:78vh;overflow:auto;padding:18px;border-radius:20px;background:rgba(246,250,255,.97);border:1px solid rgba(255,255,255,.9);box-shadow:0 18px 55px rgba(42,58,105,.22);color:var(--ink)}
+.test-panel.open{display:block}.test-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.test-head div{display:flex;flex-direction:column}.test-head span{font-size:12px;opacity:.6}.test-head button{border:0;background:transparent;font-size:22px;cursor:pointer;color:var(--ink)}
+.test-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.test-grid label{font-size:11px}.test-grid input,.test-grid select{display:block;width:100%;margin-top:5px;padding:9px;border:1px solid rgba(91,108,172,.18);border-radius:9px;background:white;color:var(--ink)}
+.test-submit{width:100%;margin-top:14px;padding:11px;border:0;border-radius:11px;background:linear-gradient(90deg,#5c82d8,#7c74d4);color:white;cursor:pointer}.test-clear{display:block;margin:9px auto 0;border:0;background:transparent;text-decoration:underline;color:var(--ink);cursor:pointer;font-size:11px}
+.test-row td{padding:10px 14px;border-top:1px solid rgba(91,108,172,.1);font-size:12px}.test-badge{display:inline-block;padding:4px 7px;border-radius:999px;background:rgba(255,255,255,.62)}
+@media(max-width:650px){.test-grid{grid-template-columns:1fr}}
+
+</style>
+
+<style>
+.accordion-head>td{padding:0!important;border:0!important}.accordion-head details{border-bottom:1px solid rgba(23,36,111,.12);background:rgba(255,255,255,.72)}.accordion-head summary,.home-school summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;list-style:none}.accordion-head summary::-webkit-details-marker,.home-school summary::-webkit-details-marker{display:none}.accordion-head summary:after,.home-school summary:after{content:'▾';font-size:14px;transition:.18s}.accordion-head details[open] summary:after,.home-school[open] summary:after{transform:rotate(180deg)}.accordion-head summary span{font-size:12px;opacity:.65;margin-left:auto}.accordion-body{padding:0 16px 14px}.acc-item{display:grid;grid-template-columns:minmax(170px,1.1fr) minmax(220px,1.5fr);gap:4px 18px;padding:10px 0;border-top:1px solid rgba(23,36,111,.08)}.acc-item small{grid-column:1/3;opacity:.7}.acc-item em{font-style:normal;font-size:11px;opacity:.65}.home-school{border-bottom:1px solid rgba(23,36,111,.1)}.home-school summary{padding:10px 2px}.home-school summary small{margin-left:auto;margin-right:8px}.home-school-item{padding:7px 18px;font-size:13px}.home-school-item span{display:block;opacity:.65;font-size:11px;margin-top:2px}@media(max-width:760px){.acc-item{grid-template-columns:1fr}.acc-item small{grid-column:1}}
+</style>
+
+<style id="prisma-layout-polish">
+html,body{
+  margin:0!important;width:100%!important;height:100%!important;
+  overflow:hidden;
+}
+body{
+  font-family:"Segoe UI",Arial,sans-serif!important;
+  color:#132d67!important;
+  background:#dce9f8!important;
+}
+body:has(#login.on){overflow:hidden!important}
+
+/* LOGIN: ocupa a viewport inteira, sem faixas e sem recorte por overflow */
+#login.on{
+  display:block!important;position:fixed!important;inset:0!important;
+  width:100vw!important;height:100vh!important;height:100dvh!important;
+  min-height:0!important;overflow:hidden!important;
+  background-size:cover!important;
+  background-position:center center!important;background-repeat:no-repeat!important;
+}
+
+/* SELEÇÃO DE EVENTO */
+#eventSelect.on{
+  position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;
+  min-height:0!important;overflow:hidden!important;
+  box-sizing:border-box!important;
+  background:
+    radial-gradient(circle at 50% 25%,rgba(255,255,255,.72),transparent 34%),
+    linear-gradient(145deg,#dceafa 0%,#c9dcf4 48%,#dce9f8 100%)!important;
+}
+#eventSelect .event-wrap{
+  min-height:100vh!important;height:100vh!important;
+  padding:32px 28px 24px!important;box-sizing:border-box!important;
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;
+}
+#eventSelect .event-wrap h1,
+#eventSelect h1{
+  margin:0 0 24px!important;font-family:Georgia,"Times New Roman",serif!important;
+  font-size:30px!important;font-weight:500!important;letter-spacing:.2px!important;
+}
+#eventSelect .event-grid{
+  width:min(820px,82vw)!important;gap:22px!important;margin:0 auto 18px!important;
+}
+#eventSelect .event-card{
+  height:230px!important;min-height:0!important;border-radius:22px!important;
+  background:rgba(255,255,255,.66)!important;
+  border:1px solid rgba(203,169,104,.58)!important;
+  box-shadow:0 16px 34px rgba(61,91,139,.12)!important;
+}
+#eventSelect .event-card img{
+  max-width:78%!important;max-height:72%!important;object-fit:contain!important;
+}
+#eventSelect .event-back{margin-top:2px!important}
+#eventSelect .event-actions{margin-top:10px!important}
+
+/* TELAS INTERNAS: profundidade suave, sem o bloco azul chapado */
+.screen.on:not(#login):not(#eventSelect),
+#app.on,#fafApp.on,#faftApp.on{
+  height:100vh!important;min-height:0!important;overflow:hidden!important;
+  background:
+    radial-gradient(circle at 88% 8%,rgba(255,255,255,.78),transparent 24%),
+    radial-gradient(circle at 18% 86%,rgba(183,205,240,.5),transparent 30%),
+    linear-gradient(135deg,#eaf3fd 0%,#d9e8f9 46%,#cbdff5 100%)!important;
+}
+
+/* barra lateral */
+.sidebar,.side{
+  height:100vh!important;box-sizing:border-box!important;
+  background:rgba(249,252,255,.82)!important;
+  border-right:1px solid rgba(175,146,96,.30)!important;
+  box-shadow:8px 0 30px rgba(46,79,128,.06)!important;
+}
+.sidebar h1,.sidebar h2,.side h1,.side h2{
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-weight:600!important;letter-spacing:.3px!important;
+}
+.sidebar a,.side a,.nav-item{
+  font-family:"Segoe UI",Arial,sans-serif!important;
+  font-size:15px!important;
+}
+.sidebar .active,.side .active,.nav-item.active{
+  border-radius:14px!important;
+  box-shadow:0 8px 20px rgba(74,89,190,.16)!important;
+}
+
+/* área principal */
+.main,.content,.main-content{
+  height:100vh!important;min-height:0!important;overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+.topbar,.top-bar,.header{
+  min-height:70px!important;padding-top:0!important;padding-bottom:0!important;
+}
+.panel,.card,.content-card,.result-panel{
+  background:rgba(255,255,255,.24)!important;
+  border:1px solid rgba(255,255,255,.62)!important;
+  box-shadow:0 16px 45px rgba(65,94,139,.08)!important;
+  backdrop-filter:blur(4px);
+}
+h1,h2,h3,.page-title{
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-weight:500!important;color:#173577!important;
+}
+.page-title,.content h1,.main h1{font-size:30px!important}
+button,.btn,.pill,.tab{
+  font-family:"Segoe UI",Arial,sans-serif!important;
+}
+table{
+  background:rgba(255,255,255,.28)!important;
+}
+thead th{
+  background:rgba(250,252,255,.76)!important;
+  font-family:"Segoe UI",Arial,sans-serif!important;
+  font-size:13px!important;letter-spacing:.1px!important;
+}
+
+/* evita a barra vertical causada por alguns containers com min-height */
+.screen,.page,.view{box-sizing:border-box!important}
+</style>
+
+
+
+
+
+<style id="prisma-layout-reviewed">
+@font-face{font-family:PrismaSans;src:url(./assets/1aa18cfefa58132c52ce5de7.bin) format('opentype');font-weight:400;font-display:swap}
+@font-face{font-family:PrismaDisplay;src:url(./assets/e6be218ae83e61aa8a29990d.bin) format('opentype');font-weight:400;font-display:swap}
+body,button,input,select,textarea,.nav-btn,.faft-nav-btn,.pill,thead th{font-family:PrismaSans,'Trebuchet MS',sans-serif!important}
+body{line-height:1.45}
+h1,h2,h3,.page-title,#select h1{font-family:PrismaDisplay,Palatino,serif!important;letter-spacing:.01em}
+h2,.module-head h2,.inscricoes-head h2{font-size:32px}
+button{transition:background .18s,box-shadow .18s,transform .18s}
+button:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #6d4dc5!important;outline-offset:3px}
+#login.on{background-size:cover!important;isolation:isolate}
+#login::before,#login::after{content:none!important}
+#login .login-hit{position:absolute!important;z-index:2;left:var(--entry-x)!important;top:var(--entry-y)!important;width:var(--entry-w)!important;height:var(--entry-h)!important;border-radius:14px}
+#login .login-hit:hover{box-shadow:0 0 0 2px rgba(255,255,255,.6),0 8px 28px rgba(114,36,188,.2)}
+.ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:0 0 22px}
+.ico svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.55;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn{font-size:15px;gap:13px;font-weight:400}
+.nav-btn.active,.faft-nav-btn.active{background:linear-gradient(110deg,#557fd5,#9576ce 75%,#c879b0)!important;box-shadow:0 5px 18px rgba(115,100,196,.18)!important}
+.nav-btn:hover:not(.active),.faft-nav-btn:hover:not(.active){background:rgba(157,124,206,.12)}
+#app{background:radial-gradient(ellipse at 95% 0%,#fff2f8,transparent 45%),linear-gradient(135deg,#eaf3fd,#d9e8f9 46%,#e4dcf5)!important}
+.workspace{background:rgba(255,255,255,.32);border-color:rgba(255,255,255,.68)}
+.page{overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#9fadd8 transparent}
+.side,.faft-side{overflow-y:auto;min-height:0}
+.inscricoes-table,.module-panel,.result-board{overflow:auto;flex-shrink:0}
+.inscricoes-table table,.module-panel table,.result-board table{min-width:560px}
+.module-wrap,.inscricoes-wrap{height:auto;min-height:100%}
+.module-head,.inscricoes-head,.home-head{flex-wrap:wrap}
+.module-note,.home-head span{opacity:.85;line-height:1.5}
+.juror-card>span{display:none!important}
+.topgroup{max-width:100%}.pill{font-size:14px}.admin{min-width:160px}
+#select.on{height:100dvh!important;overflow:auto!important;display:flex;align-items:center;justify-content:center;padding:32px 5vw}
+#select .selectbox{width:min(980px,100%)}
+#select h1{font-size:36px;margin-bottom:28px}
+.choice{background:linear-gradient(150deg,rgba(255,255,255,.86),rgba(245,239,255,.7));border-color:rgba(148,122,190,.23)}
+.choice:hover{box-shadow:0 14px 35px rgba(139,104,195,.18)}
+.faft-shell{grid-template-columns:250px minmax(0,1fr)}
+.faft-main{min-width:0}.faft-top{flex-wrap:wrap;gap:8px}.faft-work{height:calc(100dvh - 100px)}
+@media(max-width:760px){
+#app .shell,#faftPending .faft-shell{display:flex;flex-direction:column;height:100dvh;min-height:0}
+#app .side,#faftPending .faft-side{height:auto!important;flex:0 0 auto;padding:10px 12px!important;overflow:visible;border-right:0}
+#app .brand{height:60px;padding:0}#app .brand img{height:58px;width:125px}
+#app .nav,#faftPending .faft-nav{display:flex;overflow-x:auto;gap:6px;padding-bottom:5px}
+#app .nav-btn,#faftPending .faft-nav-btn{flex:0 0 auto;height:44px;white-space:nowrap;padding:0 12px;font-size:13px}
+#app .main{height:auto!important;flex:1;min-height:0;padding:8px 12px 12px;display:flex;flex-direction:column}
+#app .top{height:48px;flex:0 0 auto}.pill{height:40px}.admin{min-width:0}
+#app .workspace{position:relative;inset:auto;flex:1;min-height:0;margin-top:10px;border-radius:18px}
+.page{padding:18px}.module-head h2,.inscricoes-head h2{font-size:27px}
+#faftPending .faft-main{display:flex;flex-direction:column;min-height:0;flex:1;padding:8px 12px}
+#faftPending .faft-top{height:auto;min-height:48px;flex-shrink:0}
+#faftPending .faft-work{height:auto;flex:1;min-height:0;width:100%}
+#faftPending .faft-top .main-home-btn{display:inline-flex!important}
+.role-work-top,.jury-user-top{height:auto;min-height:74px;gap:12px;flex-wrap:wrap;padding:14px 5vw}
+.role-work-top div:first-child,.jury-user-top div{flex-wrap:wrap;gap:6px}
+.role-event-head{flex-wrap:wrap}.jury-progress{grid-template-columns:1fr}
+.screen.on:not(#login):not(#app):not(#faftPending):not(#select){overflow-y:auto!important}
+.choice{min-height:200px}.choice img{max-height:170px}
+.test-fab{right:12px;bottom:12px;padding:10px 14px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+
+<style id="prisma-delicate-festival">
+:root{--ink:#49376c;--glass:rgba(255,251,255,.8)}
+body{color:#49376c!important;font-size:17px;background:#f5effa!important}
+h1,h2,h3,.page-title{color:#634376!important;font-weight:400!important}
+button,input,select,textarea{font-size:16px}
+.nav-btn,.faft-nav-btn{font-size:17px!important;letter-spacing:.015em}
+#app.on,.faft-shell{background:radial-gradient(ellipse at 95% 5%,#ffe8f0,transparent 48%),radial-gradient(ellipse at 15% 90%,#e5defa,transparent 50%),linear-gradient(140deg,#f4f0fc,#e8f1fb 52%,#f7edf5)!important}
+.side,.faft-side{background:linear-gradient(180deg,rgba(255,253,255,.94),rgba(244,237,251,.9))!important;border-right:1px solid #e3d7ed!important}
+.nav-btn.active,.faft-nav-btn.active{color:#634376!important;background:linear-gradient(100deg,#efe1f6,#fbe4ec)!important;box-shadow:none!important;border:1px solid rgba(193,153,209,.28)}
+.ico{width:30px;height:30px;flex-basis:30px;border-radius:50%;background:radial-gradient(circle at 30% 20%,#fff,#eadcf5 70%,#f7dcea);color:#9871b2;box-shadow:inset 0 0 0 1px rgba(181,139,202,.15)}
+.ico svg{width:20px;height:20px;stroke-width:1.25}
+.nav-btn:nth-child(3n+2) .ico,.faft-nav-btn:nth-child(3n+2) .ico{color:#bb7296;background:radial-gradient(circle at 30% 20%,white,#f7e0ed)}
+.nav-btn:nth-child(3n) .ico,.faft-nav-btn:nth-child(3n) .ico{color:#638cae;background:radial-gradient(circle at 30% 20%,white,#ddebf7)}
+.nav-btn:hover:not(.active),.faft-nav-btn:hover:not(.active){background:#f5eaf6!important}
+.nav-btn,.faft-nav-btn{display:flex;align-items:center;gap:12px}
+.workspace,.faft-work{border:1px solid rgba(255,255,255,.85);background:rgba(255,253,255,.45);border-radius:28px}
+.module-head h2,.inscricoes-head h2,.home-head h2,.faft-page h2{font-size:32px!important;line-height:1.25}
+.module-head h2::after,.inscricoes-head h2::after,.home-head h2::after,.faft-page h2::after{content:"";display:block;width:88px;height:3px;margin-top:10px;border-radius:100%;background:linear-gradient(90deg,#cf99c6,#c2bee7,transparent)}
+.module-head,.inscricoes-head{margin-bottom:8px}
+.home-stat,.home-panel,.group-card,.score-card,.highlight-eval,.highlight-result{background:linear-gradient(145deg,rgba(255,255,255,.8),rgba(252,242,251,.6));border-color:rgba(255,255,255,.95);box-shadow:0 6px 20px rgba(145,114,162,.045)}
+.home-stat strong{color:#9470a9;font-size:32px}.home-stat span{font-size:14px}
+.split-tab.active,.result-tab.active,.jury-enter,.save-evaluation,.test-submit{background:linear-gradient(100deg,#a28ac9,#c68cb6)!important;color:white!important}
+.searchbox,.module-search{border-color:#e2d6ed;background:rgba(255,255,255,.83);font-size:17px}
+.module-panel th,.inscricoes-table th,.result-board th{color:#876591;background:rgba(251,246,253,.88)!important;font-size:14px!important;font-weight:400!important;letter-spacing:.035em!important}
+.pill,.admin,.sync-btn,.main-home-btn{color:#634376!important}
+.choice img,.brand img,.supporter-card img{width:auto!important;height:auto!important;object-fit:contain!important;object-position:center!important;aspect-ratio:auto!important;transform:none!important;filter:none!important}
+.choice img{max-width:88%!important;max-height:245px!important}.brand img{max-width:190px!important;max-height:130px!important}
+.supporter-card img{max-width:100%!important;max-height:76px!important}
+.faft-brand img{width:auto;height:auto;max-width:190px;max-height:110px;object-fit:contain}
+.choice{background:linear-gradient(140deg,#fffbff,#f0e6f8 60%,#fff1f5);border-color:#dfcfe9;border-radius:28px}
+#select.on{background:radial-gradient(ellipse at 85% 15%,#fff1f6,transparent 50%),linear-gradient(145deg,#f4eaf9,#e8effa)!important}
+#select h1{color:#795789!important;font-size:38px}
+#faftPending details.compact-card{background:rgba(255,252,255,.84);border-color:#e5d9ed;border-radius:20px}
+#faftPending .compact-title b{font-size:17px;font-weight:400}
+@media(max-width:760px){.nav-btn,.faft-nav-btn{font-size:15px!important}.brand img{max-height:58px!important;max-width:125px!important}.choice img{max-height:170px!important}.module-head h2,.inscricoes-head h2,.home-head h2{font-size:28px!important}}
+</style>
+<style>
+#login.portrait-art::before{content:""!important;position:absolute;inset:-25px;background-image:inherit;background-size:cover;background-position:center;filter:blur(18px)}
+#login.portrait-art::after{content:""!important;position:absolute;inset:0;background-image:inherit;background-size:contain;background-repeat:no-repeat;background-position:center;background-color:transparent}
+</style>
+<style id="prisma-shared-event-layout">/* Estrutura única para FaF e FaFt */
+.screen.on[data-event]{height:100dvh!important;min-height:0!important;overflow:hidden!important}
+.prisma-shell{display:grid;grid-template-columns:250px minmax(0,1fr);height:100%;background:radial-gradient(ellipse at 95% 5%,#ffe8f0,transparent 48%),radial-gradient(ellipse at 15% 90%,#e5defa,transparent 50%),linear-gradient(140deg,#f4f0fc,#e8f1fb 52%,#f7edf5)}
+.prisma-side{padding:20px 14px;background:linear-gradient(180deg,#fffdff,#f4edfb);border-right:1px solid #e3d7ed;overflow:auto;min-height:0}
+.prisma-brand{height:125px;display:flex;align-items:center;justify-content:center;margin-bottom:15px}
+.prisma-brand img{display:block;width:auto;height:auto;max-width:190px;max-height:115px;object-fit:contain;filter:none;transform:none}
+.prisma-nav{display:grid;gap:8px}
+.prisma-nav-btn{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;text-align:left;padding:9px 12px;border:1px solid transparent;border-radius:15px;background:transparent;color:#634376;font:inherit;font-size:17px;cursor:pointer}
+.prisma-nav-btn.active{background:linear-gradient(100deg,#efe1f6,#fbe4ec);border-color:#e5d3ec}
+.prisma-nav-btn:hover:not(.active){background:#f5eaf6}
+.prisma-nav-btn .ico{flex-shrink:0}.prisma-nav-btn:nth-child(3n+2) .ico{color:#bb7296;background:radial-gradient(circle at 30% 20%,white,#f7e0ed)}.prisma-nav-btn:nth-child(3n) .ico{color:#638cae;background:radial-gradient(circle at 30% 20%,white,#ddebf7)}
+.prisma-main{padding:16px 24px 22px;display:flex;flex-direction:column;min-width:0;min-height:0}
+.prisma-header{display:flex;align-items:center;gap:14px;flex:0 0 auto;min-height:58px;margin-bottom:14px}
+.prisma-back,.prisma-exit{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #dfcfe9;border-radius:14px;min-height:42px;padding:8px 15px;background:rgba(255,251,255,.85);color:#634376;font:inherit;cursor:pointer}
+.prisma-back svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.prisma-event{margin-left:auto;display:flex;align-items:center;gap:12px}.prisma-event span{font-size:14px;color:#876591}
+.prisma-work{position:relative;flex:1;min-height:0;border-radius:28px;border:1px solid rgba(255,255,255,.85);background:rgba(255,253,255,.45);overflow:hidden}
+.prisma-page{display:none;height:100%;padding:24px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c7add7 transparent}
+.prisma-page.active{display:block}
+.prisma-page .module-wrap{height:auto;min-height:100%;gap:16px}.prisma-page .home-wrap{gap:16px}
+.prisma-page .module-head{flex-wrap:wrap}.prisma-page h2{font-size:32px!important}
+.prisma-page .module-panel{overflow:auto}.prisma-page .compact-list{display:grid;gap:12px}
+.prisma-page .compact-card{border:1px solid #e5d9ed;border-radius:20px;background:rgba(255,252,255,.84);overflow:hidden}
+.prisma-page .compact-card>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px}
+.prisma-page .compact-card>summary::-webkit-details-marker{display:none}
+.prisma-page .compact-card>summary:after{content:'⌄';font-size:20px;transition:transform .2s}
+.prisma-page .compact-card[open]>summary:after{transform:rotate(180deg)}
+.prisma-page .compact-title{display:flex;flex-direction:column;gap:3px;min-width:0}.prisma-page .compact-title b{font-size:17px;font-weight:400}.prisma-page .compact-title small{font-size:13px;color:#876591}
+.prisma-page .compact-body{padding:0 18px 18px}
+.prisma-page .school-info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 18px;padding:10px 0 18px}.prisma-page .school-info div{min-width:0}.prisma-page .school-info span{display:block;font-size:12px;color:#876591}.prisma-page .school-info b{font-size:15px;font-weight:400;overflow-wrap:anywhere}
+.prisma-page .school-presentations{border-top:1px solid #eadfed}.prisma-page .school-presentations h4{font-size:15px;font-weight:400;margin:12px 0 3px}
+.prisma-page .presentation-row{display:grid;grid-template-columns:1.25fr .9fr .9fr 1.2fr 1fr;gap:14px;padding:14px 0;border-top:1px solid #eee4f0;align-items:start;font-size:14px;overflow-wrap:anywhere}.prisma-page .presentation-row b{display:block;font-size:15px;font-weight:400}
+.prisma-page .participant-person{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:11px 0;border-top:1px solid #eee4f0;align-items:center}.prisma-page .participant-person b{font-weight:400}.prisma-page .participant-person span{font-size:14px;color:#876591;white-space:nowrap}
+.prisma-page .juror-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;flex:none}
+.prisma-page .juror-card{height:150px;min-height:150px}.prisma-page .juror-card img{height:150px;min-height:150px;object-fit:cover;object-position:center 20%}
+.prisma-page .juror-card>span{display:none!important}
+.prisma-page .jury-sheet{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.prisma-page .supporter-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.prisma-page .supporter-card img{height:auto;width:auto;object-fit:contain;max-height:76px;max-width:100%}
+.prisma-page .highlight-layout{grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr)}
+.prisma-page .result-tab{cursor:pointer}.prisma-page .result-tab.active{background:#a28ac9;color:white}
+.prisma-page .module-empty{min-height:160px;opacity:1;color:#876591}
+button:disabled{opacity:.5;cursor:default}
+@media(max-width:1200px){.prisma-page .juror-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.prisma-page .supporter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:950px){.prisma-page .highlight-layout{grid-template-columns:1fr}.prisma-page .school-info{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+.prisma-shell{display:flex;flex-direction:column}.prisma-side{flex:0 0 auto;overflow:visible;padding:10px 12px;border-right:0;border-bottom:1px solid #e3d7ed}
+.prisma-brand{height:58px;margin-bottom:6px}.prisma-brand img{max-height:58px;max-width:125px}
+.prisma-nav{display:flex;overflow-x:auto;gap:6px;padding-bottom:5px}.prisma-nav-btn{flex:0 0 auto;width:auto;min-height:44px;padding:6px 10px;font-size:15px;white-space:nowrap}
+.prisma-main{flex:1;padding:8px 12px 12px}.prisma-header{min-height:46px;margin-bottom:8px;gap:8px}.prisma-event{gap:6px}.prisma-event span{display:none}
+.prisma-back,.prisma-exit{padding:7px 11px;min-height:40px}.prisma-page{padding:18px}.prisma-page h2{font-size:28px!important}
+.prisma-page .school-info{grid-template-columns:1fr}.prisma-page .presentation-row{grid-template-columns:1fr;gap:5px}.prisma-page .pcat:before{content:'Categoria: '}.prisma-page .pmod:before{content:'Modalidade: '}.prisma-page .pcor:before{content:'Coreografia: '}.prisma-page .pcrg:before{content:'Coreógrafa(o): '}
+.prisma-page .jury-sheet{grid-template-columns:1fr}.prisma-page .juror-grid,.prisma-page .supporter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+<style id="approved-two-screens-v3">
+/* Duas telas aprovadas: Login e Painel Principal */
+#login{position:relative!important;overflow:hidden!important;background:#eef3ff!important;height:100dvh!important;min-height:0!important;}
+#login::before{content:""!important;display:block!important;position:absolute;inset:-2px;z-index:0;background-image:var(--approved-login-bg);background-size:cover;background-position:center center;filter:blur(10px);transform:scale(1.03);opacity:.98;}
+#login::after{content:""!important;display:block!important;position:absolute;inset:0;z-index:0;background:rgba(245,248,255,.06);}
+#login .approved-login-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center center;display:block;z-index:1;}
+#login .login-hit{display:none!important;}
+#login .approved-hot{position:absolute;z-index:5;border:0;background:transparent;cursor:pointer;color:transparent;font-size:0;}
+/* Coordenadas relativas à arte 1536x1024; a camada JS acompanha o retângulo real da imagem. */
+#login .approved-hot.enter{left:62.3%;top:48.3%;width:27.8%;height:6.8%;}
+#login .approved-hot.jury{left:62.3%;top:62.2%;width:13.4%;height:13.4%;}
+#login .approved-hot.support{left:76.5%;top:62.2%;width:13.5%;height:13.4%;}
+#login .approved-login-stage{position:absolute;z-index:2;pointer-events:none;}
+#login .approved-login-stage .approved-hot{pointer-events:auto;}
+
+#app.approved-home{position:relative!important;overflow:hidden!important;height:100dvh!important;min-height:0!important;background:#eef3ff!important;}
+#app.approved-home::before{content:"";position:absolute;inset:-2px;z-index:0;background-image:var(--approved-panel-bg);background-size:cover;background-position:center center;filter:blur(10px);transform:scale(1.03);opacity:.98;}
+#app.approved-home::after{content:"";position:absolute;inset:0;z-index:0;background:rgba(245,248,255,.05);pointer-events:none;}
+#app.approved-home>.prisma-shell{display:none!important;}
+#app .approved-panel-stage{display:none;position:absolute;z-index:20;pointer-events:none;}
+#app.approved-home .approved-panel-stage{display:block;}
+#app .approved-panel-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;}
+#app .approved-panel-stage button{position:absolute;border:0;background:transparent;cursor:pointer;pointer-events:auto;color:transparent;font-size:0;}
+/* Painel aprovado 1536x1024 */
+#app .p-faf{left:21.5%;top:2.8%;width:8%;height:6.7%;}
+#app .p-faft{left:30.0%;top:2.8%;width:8%;height:6.7%;}
+#app .p-inicio{left:1.8%;top:13.8%;width:14.2%;height:5.4%;}
+#app .p-inscricoes{left:1.8%;top:20.0%;width:14.2%;height:5.4%;}
+#app .p-participantes{left:1.8%;top:26.0%;width:14.2%;height:5.4%;}
+#app .p-categorias{left:1.8%;top:32.0%;width:14.2%;height:5.4%;}
+#app .p-modalidades{left:1.8%;top:38.0%;width:14.2%;height:5.4%;}
+#app .p-escolas{left:1.8%;top:44.0%;width:14.2%;height:5.4%;}
+#app .p-juri{left:1.8%;top:50.0%;width:14.2%;height:5.4%;}
+#app .p-resultados{left:1.8%;top:56.0%;width:14.2%;height:5.4%;}
+#app .p-config{left:1.8%;top:64.0%;width:14.2%;height:5.4%;}
+#app .p-card-inscricoes{left:19.0%;top:21.4%;width:15.5%;height:10.5%;}
+#app .p-card-participantes{left:35.0%;top:21.4%;width:15.5%;height:10.5%;}
+#app .p-card-escolas{left:51.0%;top:21.4%;width:15.5%;height:10.5%;}
+#app .p-card-categorias{left:67.0%;top:21.4%;width:15.5%;height:10.5%;}
+#app .p-card-modalidades{left:83.0%;top:21.4%;width:15.0%;height:10.5%;}
+#app .p-quick-inscricoes{left:19.8%;top:54.8%;width:12.0%;height:10.7%;}
+#app .p-quick-participantes{left:32.8%;top:54.8%;width:12.0%;height:10.7%;}
+#app .p-quick-escolas{left:45.8%;top:54.8%;width:12.0%;height:10.7%;}
+#app .p-quick-categorias{left:58.8%;top:54.8%;width:12.0%;height:10.7%;}
+#app .p-quick-modalidades{left:71.8%;top:54.8%;width:12.0%;height:10.7%;}
+#app .p-quick-juri{left:84.8%;top:54.8%;width:12.0%;height:10.7%;}
+#app .p-ver-todas{left:90.5%;top:69.0%;width:7%;height:4%;}
+</style>
+<style id="prisma-static-scenes">
+#login.on,#app.approved-home.on{position:fixed!important;inset:0!important;padding:0!important;margin:0!important;width:100%!important;height:100dvh!important;min-height:0!important;overflow:hidden!important;background:#eaf0fc!important;}
+#login::before,#login::after,#app.approved-home::before,#app.approved-home::after{display:none!important;content:none!important;}
+#login,#app{--art-w:min(100vw,150dvh);--art-h:min(66.6666666667vw,100dvh);--edge-x:max(0px,calc((100vw - var(--art-w))/2));--edge-y:max(0px,calc((100dvh - var(--art-h))/2));}
+.prisma-art-frame,#login .approved-login-stage,#app .approved-panel-stage{position:absolute!important;width:var(--art-w)!important;height:var(--art-h)!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%);}
+.prisma-art-frame{pointer-events:none;z-index:1;overflow:visible;}
+#app>.panel-art-frame{display:none;}#app.approved-home>.panel-art-frame{display:block;}
+#login .approved-login-art,#app .approved-panel-art{position:absolute;inset:0;width:100%!important;height:100%!important;display:block!important;transform:none!important;max-width:none!important;max-height:none!important;}
+.prisma-art-edge{position:absolute;display:block;overflow:hidden;pointer-events:none;}
+.prisma-art-edge.left{left:calc(-1 * var(--edge-x));top:0;width:calc(var(--edge-x) + 1px);height:100%;transform:scaleX(-1);}
+.prisma-art-edge.right{left:calc(100% - 1px);top:0;width:calc(var(--edge-x) + 1px);height:100%;transform:scaleX(-1);}
+.prisma-art-edge.top{left:0;top:calc(-1 * var(--edge-y));width:100%;height:calc(var(--edge-y) + 1px);transform:scaleY(-1);}
+.prisma-art-edge.bottom{left:0;top:calc(100% - 1px);width:100%;height:calc(var(--edge-y) + 1px);transform:scaleY(-1);}
+.approved-hot:focus-visible,.approved-panel-stage button:focus-visible{outline:2px solid #6241a1;outline-offset:3px;border-radius:10px;}
+#app .approved-panel-stage .panel-back{left:1.8%;bottom:2%;width:14.2%;height:4.5%;background:rgba(255,255,255,.88)!important;color:#263468!important;font-size:clamp(9px,1vw,15px)!important;border-radius:10px;}
+</style><style id="panel-back-replaces-brand">
+#app .approved-panel-stage .panel-back{left:0!important;top:0!important;bottom:auto!important;width:20.4%!important;height:10%!important;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#eff0fd,#e2eafa)!important;border:0;border-radius:0!important;color:#263468!important;font-family:Georgia,serif;font-size:clamp(15px,1.55vw,25px)!important;box-shadow:inset -1px 0 rgba(143,153,205,.12);}
+#app .panel-back svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+#app .panel-back:hover{background:linear-gradient(135deg,#e6e8fa,#d7e4f8)!important;}
+</style><style id="prisma-responsive-panel-v3">
+#app.approved-home{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important;background:#eef3ff!important;padding:0!important;margin:0!important}
+#app.approved-home>.panel-art-frame,#app.approved-home>.approved-panel-stage,#app.approved-home>.prisma-shell{display:none!important}
+#app>.prisma-live-dashboard{display:none}
+#app.approved-home>.prisma-live-dashboard{display:grid;grid-template-columns:clamp(190px,20vw,310px) 1fr;width:100%;height:100%;position:relative;z-index:50;color:#071b74;font-family:Arial,sans-serif;background:
+linear-gradient(125deg,rgba(211,225,255,.55),rgba(250,244,255,.72) 34%,rgba(228,240,255,.64) 68%,rgba(255,239,247,.5)),
+linear-gradient(35deg,transparent 0 18%,rgba(155,174,255,.14) 18.2% 19%,transparent 19.2% 44%,rgba(232,174,255,.13) 44.2% 45%,transparent 45.2% 71%,rgba(255,204,126,.10) 71.2% 72%,transparent 72.2%);
+}
+#app.approved-home>.prisma-live-dashboard:before,#app.approved-home>.prisma-live-dashboard:after{content:"";position:absolute;pointer-events:none;z-index:0;opacity:.45;filter:blur(.2px)}
+#app.approved-home>.prisma-live-dashboard:before{inset:0;background:linear-gradient(145deg,transparent 0 12%,rgba(126,160,255,.13) 12.2% 13%,transparent 13.2% 31%,rgba(213,139,255,.10) 31.2% 32%,transparent 32.2% 62%,rgba(123,204,255,.10) 62.2% 63%,transparent 63.2%)}
+#app.approved-home>.prisma-live-dashboard:after{right:-8vw;top:-10vh;width:55vw;height:65vh;background:conic-gradient(from 210deg,transparent,rgba(157,181,255,.18),rgba(246,184,237,.16),rgba(255,224,168,.13),transparent);clip-path:polygon(50% 0,100% 38%,74% 100%,18% 84%,0 31%)}
+.prisma-live-dashboard>*{position:relative;z-index:1}.pld-sidebar{background:rgba(247,249,255,.64);border-right:1px solid rgba(133,150,212,.16);padding:clamp(16px,2vh,26px) clamp(14px,1.8vw,28px);backdrop-filter:blur(14px)}
+.pld-back{width:100%;height:clamp(54px,8vh,74px);border:0;border-radius:14px;background:rgba(238,242,255,.82);color:#0c2675;font:clamp(18px,1.5vw,25px) Georgia,serif;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer}.pld-sidebar nav{display:flex;flex-direction:column;gap:clamp(4px,.6vh,9px);margin-top:clamp(16px,2.5vh,28px)}
+.pld-sidebar nav button{border:0;background:transparent;color:#0a2477;border-radius:10px;min-height:clamp(42px,6.1vh,58px);display:grid;grid-template-columns:42px 1fr;align-items:center;text-align:left;padding:0 10px;font-size:clamp(13px,1vw,17px);cursor:pointer}.pld-sidebar nav button b{font-size:clamp(22px,1.8vw,30px);font-weight:400}.pld-sidebar nav button.active{background:linear-gradient(100deg,rgba(92,132,255,.75),rgba(231,144,239,.62));color:white;box-shadow:0 8px 18px rgba(83,102,190,.13)}.pld-sidebar nav i{height:1px;background:linear-gradient(90deg,rgba(40,78,180,.25),rgba(232,170,69,.5),rgba(40,78,180,.15));margin:4px 8px}
+.pld-main{min-width:0;display:grid;grid-template-rows:clamp(70px,10vh,96px) 1fr;height:100%;overflow:hidden}.pld-topbar{margin:0 clamp(12px,1.5vw,24px);height:100%;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(184,149,200,.2);background:rgba(250,251,255,.42);backdrop-filter:blur(12px);padding:0 clamp(14px,2vw,28px);border-radius:0 0 14px 14px}.pld-events,.pld-user{display:flex;align-items:center;gap:clamp(10px,1.2vw,18px)}.pld-events button{border:1px solid rgba(143,155,216,.18);background:rgba(240,244,255,.7);color:#536bb2;border-radius:10px;padding:11px 24px;font:700 clamp(16px,1.4vw,22px) Georgia,serif}.pld-events .selected{background:white;color:#0a2173;box-shadow:0 4px 10px rgba(76,89,157,.10)}.pld-user{font-size:clamp(12px,.95vw,16px)}.pld-user small{display:block;color:#6c7ab0;margin-top:2px}.pld-user .avatar{font-size:clamp(26px,2vw,34px)}.pld-user .bell{font-size:22px}
+.pld-content{padding:clamp(10px,1.5vh,18px) clamp(14px,1.8vw,28px) clamp(12px,1.6vh,20px);overflow:hidden;display:grid;grid-template-rows:auto auto auto auto auto minmax(0,1fr);gap:clamp(8px,1.25vh,14px)}.pld-content h1{font:700 clamp(28px,3vw,48px) Georgia,serif;margin:0;color:#07196e;line-height:1}.pld-title-rule{height:2px;width:clamp(220px,28vw,420px);background:linear-gradient(90deg,#e5a42c 0 36%,transparent 36% 40%,#e5a42c 40% 100%);position:relative}.pld-title-rule:after{content:"◆";position:absolute;left:38%;top:-9px;color:#e7a62d;font-size:13px}
+.pld-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(7px,1vw,14px)}.pld-metrics button,.pld-panel{border:1px solid rgba(131,151,219,.25);background:rgba(251,252,255,.76);box-shadow:0 7px 16px rgba(88,105,171,.06);backdrop-filter:blur(9px);border-radius:12px}.pld-metrics button{min-width:0;display:flex;align-items:center;gap:clamp(7px,1vw,14px);padding:clamp(9px,1.2vh,14px) clamp(8px,1vw,14px);color:#0a2173;text-align:left;cursor:pointer}.pld-metrics em{font-style:normal;font-size:clamp(28px,3vw,48px);color:#9d39f4}.pld-metrics button:nth-child(3) em{color:#176fe9}.pld-metrics button:nth-child(4) em{color:#ef921b}.pld-metrics span{font-size:clamp(10px,.9vw,15px);white-space:nowrap}.pld-metrics strong{display:block;font:700 clamp(22px,2.2vw,35px) Georgia,serif;margin-top:3px}
+.pld-panel{padding:clamp(8px,1vh,12px) clamp(12px,1.3vw,20px)}.pld-panel h2{font:700 clamp(17px,1.45vw,24px) Georgia,serif;margin:0 0 clamp(6px,.7vh,10px)}.timeline{display:grid;grid-template-columns:repeat(4,1fr);align-items:start;position:relative;padding:0 5%}.timeline:before{content:"";position:absolute;left:12%;right:12%;top:14px;height:2px;background:linear-gradient(90deg,#516aff,#a440ff,#8192d0)}.timeline>span{z-index:1;text-align:center;color:#6477ba}.timeline>span:before,.timeline>span>i{content:"";display:grid;place-items:center;width:28px;height:28px;border:2px solid #7e8ed1;border-radius:50%;background:#f7f9ff;margin:0 auto 6px}.timeline>span.done:before{content:"✓";color:#6746ff;border-color:#6746ff;font-weight:700}.timeline small{display:block;color:#0b2374;font-size:clamp(10px,.85vw,14px);white-space:nowrap}
+.pld-quick>div{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(6px,.8vw,12px)}.pld-quick button{border:1px solid rgba(170,131,225,.28);border-radius:9px;background:rgba(250,246,255,.7);color:#092274;min-width:0;padding:clamp(7px,.9vh,11px) 5px;font-size:clamp(9px,.8vw,13px);cursor:pointer;white-space:nowrap}.pld-quick button:nth-child(3){background:rgba(240,248,255,.78);border-color:rgba(73,141,231,.24)}.pld-quick button:nth-child(4){background:rgba(255,249,237,.82);border-color:rgba(234,161,57,.32)}.pld-quick em{display:block;font-style:normal;font-size:clamp(24px,2.2vw,34px);color:#9940f2;margin-bottom:3px}.pld-quick button:nth-child(3) em{color:#176fe9}.pld-quick button:nth-child(4) em{color:#f07636}
+.pld-table{min-height:0;overflow:hidden;display:flex;flex-direction:column}.table-head{display:flex;justify-content:space-between;align-items:center}.table-head h2{margin:0}.table-head button{border:0;background:transparent;color:#1937a0;cursor:pointer}.table-wrap{min-height:0;overflow:hidden;flex:1}.pld-table table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:clamp(9px,.72vw,12px)}.pld-table th,.pld-table td{padding:clamp(3px,.45vh,6px) 7px;border-bottom:1px solid rgba(126,151,214,.16);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pld-table th{font-weight:400;background:rgba(226,234,255,.5)}.pld-table mark{border-radius:12px;padding:3px 15px;background:#ddc5ff;color:#5c1fc3}.pld-table mark.blue{background:#cfe2ff;color:#0b4ab3}.pld-table mark.pink{background:#ffd2eb;color:#8b2583}.pld-table mark.ok{background:#ccefe1;color:#126a51}.pld-table mark.wait{background:#ffe9bd;color:#a86700}
+@media(max-width:1050px){#app.approved-home>.prisma-live-dashboard{grid-template-columns:170px 1fr}.pld-sidebar{padding-left:10px;padding-right:10px}.pld-sidebar nav button{grid-template-columns:34px 1fr}.pld-user small{display:none}.pld-quick button{font-size:9px}.pld-content{padding-left:10px;padding-right:10px}}
+@media(max-height:760px){.pld-content{gap:6px;padding-top:7px;padding-bottom:7px}.pld-main{grid-template-rows:66px 1fr}.pld-sidebar{padding-top:8px;padding-bottom:8px}.pld-back{height:52px}.pld-sidebar nav{margin-top:8px;gap:2px}.pld-sidebar nav button{min-height:39px}.pld-panel{padding-top:6px;padding-bottom:6px}.pld-panel h2{margin-bottom:4px}.pld-metrics button{padding-top:7px;padding-bottom:7px}.pld-quick button{padding-top:5px;padding-bottom:5px}.pld-table th,.pld-table td{padding-top:2px;padding-bottom:2px}}
+</style>
+<style id="prisma-responsive-panel-v3-faft">
+#faftPending.approved-home{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important;background:#eef3ff!important;padding:0!important;margin:0!important}
+#faftPending.approved-home>.panel-art-frame,#faftPending.approved-home>.approved-panel-stage,#faftPending.approved-home>.prisma-shell{display:none!important}
+#faftPending>.prisma-live-dashboard{display:none}
+#faftPending.approved-home>.prisma-live-dashboard{display:grid;grid-template-columns:clamp(190px,20vw,310px) 1fr;width:100%;height:100%;position:relative;z-index:50;color:#071b74;font-family:Arial,sans-serif;background:
+linear-gradient(125deg,rgba(211,225,255,.55),rgba(250,244,255,.72) 34%,rgba(228,240,255,.64) 68%,rgba(255,239,247,.5)),
+linear-gradient(35deg,transparent 0 18%,rgba(155,174,255,.14) 18.2% 19%,transparent 19.2% 44%,rgba(232,174,255,.13) 44.2% 45%,transparent 45.2% 71%,rgba(255,204,126,.10) 71.2% 72%,transparent 72.2%);
+}
+#faftPending.approved-home>.prisma-live-dashboard:before,#faftPending.approved-home>.prisma-live-dashboard:after{content:"";position:absolute;pointer-events:none;z-index:0;opacity:.45;filter:blur(.2px)}
+#faftPending.approved-home>.prisma-live-dashboard:before{inset:0;background:linear-gradient(145deg,transparent 0 12%,rgba(126,160,255,.13) 12.2% 13%,transparent 13.2% 31%,rgba(213,139,255,.10) 31.2% 32%,transparent 32.2% 62%,rgba(123,204,255,.10) 62.2% 63%,transparent 63.2%)}
+#faftPending.approved-home>.prisma-live-dashboard:after{right:-8vw;top:-10vh;width:55vw;height:65vh;background:conic-gradient(from 210deg,transparent,rgba(157,181,255,.18),rgba(246,184,237,.16),rgba(255,224,168,.13),transparent);clip-path:polygon(50% 0,100% 38%,74% 100%,18% 84%,0 31%)}
+.prisma-live-dashboard>*{position:relative;z-index:1}.pld-sidebar{background:rgba(247,249,255,.64);border-right:1px solid rgba(133,150,212,.16);padding:clamp(16px,2vh,26px) clamp(14px,1.8vw,28px);backdrop-filter:blur(14px)}
+.pld-back{width:100%;height:clamp(54px,8vh,74px);border:0;border-radius:14px;background:rgba(238,242,255,.82);color:#0c2675;font:clamp(18px,1.5vw,25px) Georgia,serif;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer}.pld-sidebar nav{display:flex;flex-direction:column;gap:clamp(4px,.6vh,9px);margin-top:clamp(16px,2.5vh,28px)}
+.pld-sidebar nav button{border:0;background:transparent;color:#0a2477;border-radius:10px;min-height:clamp(42px,6.1vh,58px);display:grid;grid-template-columns:42px 1fr;align-items:center;text-align:left;padding:0 10px;font-size:clamp(13px,1vw,17px);cursor:pointer}.pld-sidebar nav button b{font-size:clamp(22px,1.8vw,30px);font-weight:400}.pld-sidebar nav button.active{background:linear-gradient(100deg,rgba(92,132,255,.75),rgba(231,144,239,.62));color:white;box-shadow:0 8px 18px rgba(83,102,190,.13)}.pld-sidebar nav i{height:1px;background:linear-gradient(90deg,rgba(40,78,180,.25),rgba(232,170,69,.5),rgba(40,78,180,.15));margin:4px 8px}
+.pld-main{min-width:0;display:grid;grid-template-rows:clamp(70px,10vh,96px) 1fr;height:100%;overflow:hidden}.pld-topbar{margin:0 clamp(12px,1.5vw,24px);height:100%;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(184,149,200,.2);background:rgba(250,251,255,.42);backdrop-filter:blur(12px);padding:0 clamp(14px,2vw,28px);border-radius:0 0 14px 14px}.pld-events,.pld-user{display:flex;align-items:center;gap:clamp(10px,1.2vw,18px)}.pld-events button{border:1px solid rgba(143,155,216,.18);background:rgba(240,244,255,.7);color:#536bb2;border-radius:10px;padding:11px 24px;font:700 clamp(16px,1.4vw,22px) Georgia,serif}.pld-events .selected{background:white;color:#0a2173;box-shadow:0 4px 10px rgba(76,89,157,.10)}.pld-user{font-size:clamp(12px,.95vw,16px)}.pld-user small{display:block;color:#6c7ab0;margin-top:2px}.pld-user .avatar{font-size:clamp(26px,2vw,34px)}.pld-user .bell{font-size:22px}
+.pld-content{padding:clamp(10px,1.5vh,18px) clamp(14px,1.8vw,28px) clamp(12px,1.6vh,20px);overflow:hidden;display:grid;grid-template-rows:auto auto auto auto auto minmax(0,1fr);gap:clamp(8px,1.25vh,14px)}.pld-content h1{font:700 clamp(28px,3vw,48px) Georgia,serif;margin:0;color:#07196e;line-height:1}.pld-title-rule{height:2px;width:clamp(220px,28vw,420px);background:linear-gradient(90deg,#e5a42c 0 36%,transparent 36% 40%,#e5a42c 40% 100%);position:relative}.pld-title-rule:after{content:"◆";position:absolute;left:38%;top:-9px;color:#e7a62d;font-size:13px}
+.pld-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(7px,1vw,14px)}.pld-metrics button,.pld-panel{border:1px solid rgba(131,151,219,.25);background:rgba(251,252,255,.76);box-shadow:0 7px 16px rgba(88,105,171,.06);backdrop-filter:blur(9px);border-radius:12px}.pld-metrics button{min-width:0;display:flex;align-items:center;gap:clamp(7px,1vw,14px);padding:clamp(9px,1.2vh,14px) clamp(8px,1vw,14px);color:#0a2173;text-align:left;cursor:pointer}.pld-metrics em{font-style:normal;font-size:clamp(28px,3vw,48px);color:#9d39f4}.pld-metrics button:nth-child(3) em{color:#176fe9}.pld-metrics button:nth-child(4) em{color:#ef921b}.pld-metrics span{font-size:clamp(10px,.9vw,15px);white-space:nowrap}.pld-metrics strong{display:block;font:700 clamp(22px,2.2vw,35px) Georgia,serif;margin-top:3px}
+.pld-panel{padding:clamp(8px,1vh,12px) clamp(12px,1.3vw,20px)}.pld-panel h2{font:700 clamp(17px,1.45vw,24px) Georgia,serif;margin:0 0 clamp(6px,.7vh,10px)}.timeline{display:grid;grid-template-columns:repeat(4,1fr);align-items:start;position:relative;padding:0 5%}.timeline:before{content:"";position:absolute;left:12%;right:12%;top:14px;height:2px;background:linear-gradient(90deg,#516aff,#a440ff,#8192d0)}.timeline>span{z-index:1;text-align:center;color:#6477ba}.timeline>span:before,.timeline>span>i{content:"";display:grid;place-items:center;width:28px;height:28px;border:2px solid #7e8ed1;border-radius:50%;background:#f7f9ff;margin:0 auto 6px}.timeline>span.done:before{content:"✓";color:#6746ff;border-color:#6746ff;font-weight:700}.timeline small{display:block;color:#0b2374;font-size:clamp(10px,.85vw,14px);white-space:nowrap}
+.pld-quick>div{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(6px,.8vw,12px)}.pld-quick button{border:1px solid rgba(170,131,225,.28);border-radius:9px;background:rgba(250,246,255,.7);color:#092274;min-width:0;padding:clamp(7px,.9vh,11px) 5px;font-size:clamp(9px,.8vw,13px);cursor:pointer;white-space:nowrap}.pld-quick button:nth-child(3){background:rgba(240,248,255,.78);border-color:rgba(73,141,231,.24)}.pld-quick button:nth-child(4){background:rgba(255,249,237,.82);border-color:rgba(234,161,57,.32)}.pld-quick em{display:block;font-style:normal;font-size:clamp(24px,2.2vw,34px);color:#9940f2;margin-bottom:3px}.pld-quick button:nth-child(3) em{color:#176fe9}.pld-quick button:nth-child(4) em{color:#f07636}
+.pld-table{min-height:0;overflow:hidden;display:flex;flex-direction:column}.table-head{display:flex;justify-content:space-between;align-items:center}.table-head h2{margin:0}.table-head button{border:0;background:transparent;color:#1937a0;cursor:pointer}.table-wrap{min-height:0;overflow:hidden;flex:1}.pld-table table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:clamp(9px,.72vw,12px)}.pld-table th,.pld-table td{padding:clamp(3px,.45vh,6px) 7px;border-bottom:1px solid rgba(126,151,214,.16);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pld-table th{font-weight:400;background:rgba(226,234,255,.5)}.pld-table mark{border-radius:12px;padding:3px 15px;background:#ddc5ff;color:#5c1fc3}.pld-table mark.blue{background:#cfe2ff;color:#0b4ab3}.pld-table mark.pink{background:#ffd2eb;color:#8b2583}.pld-table mark.ok{background:#ccefe1;color:#126a51}.pld-table mark.wait{background:#ffe9bd;color:#a86700}
+@media(max-width:1050px){#faftPending.approved-home>.prisma-live-dashboard{grid-template-columns:170px 1fr}.pld-sidebar{padding-left:10px;padding-right:10px}.pld-sidebar nav button{grid-template-columns:34px 1fr}.pld-user small{display:none}.pld-quick button{font-size:9px}.pld-content{padding-left:10px;padding-right:10px}}
+@media(max-height:760px){.pld-content{gap:6px;padding-top:7px;padding-bottom:7px}.pld-main{grid-template-rows:66px 1fr}.pld-sidebar{padding-top:8px;padding-bottom:8px}.pld-back{height:52px}.pld-sidebar nav{margin-top:8px;gap:2px}.pld-sidebar nav button{min-height:39px}.pld-panel{padding-top:6px;padding-bottom:6px}.pld-panel h2{margin-bottom:4px}.pld-metrics button{padding-top:7px;padding-bottom:7px}.pld-quick button{padding-top:5px;padding-bottom:5px}.pld-table th,.pld-table td{padding-top:2px;padding-bottom:2px}}
+</style>
+<style id="pld-table-alignment-fix">
+.pld-table .table-wrap{width:100%}
+.pld-table table{width:100%;table-layout:fixed}
+.pld-table th,.pld-table td{box-sizing:border-box;vertical-align:middle}
+.pld-table th:nth-child(1),.pld-table td:nth-child(1){width:17%;text-align:left}
+.pld-table th:nth-child(2),.pld-table td:nth-child(2){width:14%;text-align:left}
+.pld-table th:nth-child(3),.pld-table td:nth-child(3){width:16%;text-align:left}
+.pld-table th:nth-child(4),.pld-table td:nth-child(4){width:13%;text-align:center}
+.pld-table th:nth-child(5),.pld-table td:nth-child(5){width:12%;text-align:center}
+.pld-table th:nth-child(6),.pld-table td:nth-child(6){width:15%;text-align:center}
+.pld-table th:nth-child(7),.pld-table td:nth-child(7){width:13%;text-align:center}
+.pld-table td:nth-child(4) mark,
+.pld-table td:nth-child(6) mark{display:inline-block;min-width:70px;text-align:center;box-sizing:border-box}
+.pld-table th:first-child,.pld-table td:first-child{padding-left:12px}
+.pld-table th:last-child,.pld-table td:last-child{padding-right:12px}
+</style>
+
+<style id="faft-home-exclusive-fix">
+#faftPending.approved-home{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important;padding:0!important;margin:0!important}
+#faftPending.approved-home>.prisma-live-dashboard{display:grid!important}
+#faftPending.approved-home>.prisma-shell{display:none!important}
+#faftPending:not(.approved-home)>.prisma-live-dashboard{display:none!important}
+</style>
+
+<style id="prisma-todas-telas-final">
+#app,#faftPending{--az:#10277f;--vi:#7548e8;--ou:#e5aa42;--ln:rgba(70,91,178,.18);--gl:rgba(255,255,255,.80);color:var(--az)}
+#app:not(.approved-home),#faftPending:not(.approved-home){min-height:100dvh!important;background:linear-gradient(135deg,rgba(239,245,255,.97),rgba(247,241,255,.94) 47%,rgba(237,247,255,.97)),radial-gradient(circle at 10% 85%,rgba(128,112,244,.14),transparent 28%),radial-gradient(circle at 90% 15%,rgba(232,160,222,.14),transparent 27%)!important}
+#app:not(.approved-home)::before,#faftPending:not(.approved-home)::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(116deg,transparent 0 14%,rgba(255,255,255,.30) 14.2% 15%,transparent 15.3% 36%,rgba(170,194,255,.13) 36.2% 37%,transparent 37.3%),linear-gradient(52deg,transparent 0 69%,rgba(207,181,255,.14) 69.2% 70%,transparent 70.3%)}
+#app:not(.approved-home) .prisma-shell,#faftPending:not(.approved-home) .prisma-shell{position:relative;z-index:1;background:transparent!important;min-height:100dvh!important}
+#app:not(.approved-home) aside,#faftPending:not(.approved-home) aside,#app:not(.approved-home) .prisma-sidebar,#faftPending:not(.approved-home) .prisma-sidebar{background:rgba(247,250,255,.76)!important;backdrop-filter:blur(16px);border-right:1px solid var(--ln)!important;box-shadow:10px 0 30px rgba(55,72,140,.05)!important}
+#app:not(.approved-home) .sidebar-brand,#faftPending:not(.approved-home) .sidebar-brand,#app:not(.approved-home) .prisma-sidebar .brand,#faftPending:not(.approved-home) .prisma-sidebar .brand{display:none!important}
+#app:not(.approved-home) nav button,#faftPending:not(.approved-home) nav button,#app:not(.approved-home) .nav-item,#faftPending:not(.approved-home) .nav-item{border-radius:12px!important;color:var(--az)!important}
+#app:not(.approved-home) nav button.active,#faftPending:not(.approved-home) nav button.active,#app:not(.approved-home) .nav-item.active,#faftPending:not(.approved-home) .nav-item.active{background:linear-gradient(100deg,rgba(103,145,255,.86),rgba(226,157,239,.78))!important;color:white!important}
+#app:not(.approved-home) header,#faftPending:not(.approved-home) header,#app:not(.approved-home) .topbar,#faftPending:not(.approved-home) .topbar,#app:not(.approved-home) .prisma-topbar,#faftPending:not(.approved-home) .prisma-topbar{background:rgba(250,252,255,.74)!important;backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.84)!important;box-shadow:0 8px 28px rgba(58,74,145,.07)!important}
+#app:not(.approved-home) main,#faftPending:not(.approved-home) main,#app:not(.approved-home) .content,#faftPending:not(.approved-home) .content,#app:not(.approved-home) .main-content,#faftPending:not(.approved-home) .main-content,#app:not(.approved-home) .event-content,#faftPending:not(.approved-home) .event-content,#app:not(.approved-home) .view,#faftPending:not(.approved-home) .view{background:transparent!important;color:var(--az)!important}
+#app:not(.approved-home) h1,#faftPending:not(.approved-home) h1,#app:not(.approved-home) h2,#faftPending:not(.approved-home) h2,#app:not(.approved-home) h3,#faftPending:not(.approved-home) h3{color:#10216f!important}
+#app:not(.approved-home) h1,#faftPending:not(.approved-home) h1{font-family:Georgia,"Times New Roman",serif!important}
+#app:not(.approved-home) .card,#faftPending:not(.approved-home) .card,#app:not(.approved-home) .panel,#faftPending:not(.approved-home) .panel,#app:not(.approved-home) .section-card,#faftPending:not(.approved-home) .section-card,#app:not(.approved-home) .table-card,#faftPending:not(.approved-home) .table-card,#app:not(.approved-home) .form-card,#faftPending:not(.approved-home) .form-card,#app:not(.approved-home) .content-card,#faftPending:not(.approved-home) .content-card{background:var(--gl)!important;border:1px solid var(--ln)!important;box-shadow:0 8px 26px rgba(57,74,145,.07)!important;border-radius:16px!important}
+#app:not(.approved-home) table,#faftPending:not(.approved-home) table{width:100%;background:rgba(255,255,255,.56)!important;border-radius:14px!important;overflow:hidden}
+#app:not(.approved-home) th,#faftPending:not(.approved-home) th{background:rgba(231,237,255,.78)!important;color:#17318a!important}
+#app:not(.approved-home) td,#faftPending:not(.approved-home) td{border-bottom:1px solid rgba(79,101,185,.11)!important;color:#183078!important}
+#app:not(.approved-home) input,#faftPending:not(.approved-home) input,#app:not(.approved-home) select,#faftPending:not(.approved-home) select,#app:not(.approved-home) textarea,#faftPending:not(.approved-home) textarea{background:rgba(255,255,255,.84)!important;border:1px solid rgba(91,111,192,.22)!important;color:#152b7d!important;border-radius:10px!important;box-shadow:none!important}
+#app:not(.approved-home) .btn-primary,#faftPending:not(.approved-home) .btn-primary,#app:not(.approved-home) button.primary,#faftPending:not(.approved-home) button.primary,#app:not(.approved-home) .primary-btn,#faftPending:not(.approved-home) .primary-btn{color:white!important;border:0!important;border-radius:11px!important;background:linear-gradient(100deg,#276ab5,#7951c8 68%,#c274b6)!important}
+#app:not(.approved-home) .modal-content,#faftPending:not(.approved-home) .modal-content{background:rgba(249,251,255,.98)!important;color:#142b7a!important;border:1px solid var(--ln)!important;border-radius:16px!important}
+#app:not(.approved-home) .badge,#faftPending:not(.approved-home) .badge,#app:not(.approved-home) .status,#faftPending:not(.approved-home) .status,#app:not(.approved-home) .pill,#faftPending:not(.approved-home) .pill{border-radius:999px!important}
+</style>
+
+
+
+<style id="prisma-ajustes-pedidos-0810">
+/* Não exibir Voltar em FaF/FaFt */
+#app .pld-back,#faftPending .pld-back,
+#app .prisma-single-back,#faftPending .prisma-single-back,
+#app .back-btn,#faftPending .back-btn{display:none!important}
+
+/* Barra lateral: Participantes e Escola isolada removidos em todas as telas */
+#app .prisma-nav-btn[data-view="participantes"],
+#faftPending .prisma-nav-btn[data-view="participantes"],
+#app .prisma-nav-btn[data-view="escolas"],
+#faftPending .prisma-nav-btn[data-view="escolas"]{display:none!important}
+</style>
+
+<style id="prisma-secure-login">
+#login .approved-login-stage input{position:absolute;z-index:8;left:66.2%;width:20.5%;height:5.9%;border:0;outline:0;background:#f3f2ff;color:#24326f;font:clamp(10px,1.2vw,20px) Georgia,serif;border-radius:6px;padding:0 4px;pointer-events:auto;}
+#login .approved-login-stage input:focus-visible{outline:2px solid #7a65b1;}#prismaLoginStatus:empty{display:none;}#prismaEmail{top:32.4%;}#prismaPassword{top:40.4%;}
+#prismaLoginStatus{position:absolute;left:62.3%;top:81%;width:27.8%;margin:0;padding:6px;border-radius:8px;background:rgba(245,246,255,.92);text-align:center;font-size:clamp(9px,1vw,14px);color:#573a77;}
+.prisma-reset{position:absolute;left:62.3%;top:56.6%;width:27.8%;height:4%;border:0;background:#f0f1ff;color:#4e3c83;font-size:clamp(9px,1vw,14px);pointer-events:auto;cursor:pointer;}
+</style></head>
+<body><svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" style="position:absolute"><defs><image id="prisma-login-source" href="./assets/fa44b501d5c7cbf31087e5cf.png" width="1536" height="1024"/><image id="prisma-panel-source" href="./assets/b9e1c5deda995ad5a637836d.png" width="1536" height="1024"/></defs></svg>
+<section id="login" class="screen on" aria-label="Login">
+  <div class="prisma-art-frame login-art-frame" aria-hidden="true"><svg class="approved-login-art" viewBox="0 0 1536 1024"><use href="#prisma-login-source"/></svg><svg class="prisma-art-edge left" viewBox="0 0 96 1024" preserveAspectRatio="none"><use href="#prisma-login-source"/></svg><svg class="prisma-art-edge right" viewBox="1440 0 96 1024" preserveAspectRatio="none"><use href="#prisma-login-source"/></svg><svg class="prisma-art-edge top" viewBox="0 0 1536 64" preserveAspectRatio="none"><use href="#prisma-login-source"/></svg><svg class="prisma-art-edge bottom" viewBox="0 960 1536 64" preserveAspectRatio="none"><use href="#prisma-login-source"/></svg></div>
+  <div class="approved-login-stage" aria-label="Acessos do sistema"><input id="prismaEmail" type="email" autocomplete="username" aria-label="E-mail" placeholder="E-mail"><input id="prismaPassword" type="password" autocomplete="current-password" aria-label="Senha" placeholder="Senha"><p id="prismaLoginStatus" role="status" aria-live="polite"></p><button class="prisma-reset" type="button" onclick="prismaRecover()">Primeiro acesso / recuperar senha</button>
+    <button class="approved-hot enter" type="button" aria-label="Entrar" onclick="enterFaF()">Entrar</button>
+    <button class="approved-hot jury" type="button" aria-label="Acesso do Júri" onclick="openRoleLogin('jury')">Júri</button>
+    <button class="approved-hot support" type="button" aria-label="Acesso dos Apoiadores" onclick="openRoleLogin('supporter')">Apoiadores</button>
+  </div>
+</section>
+
+<section id="select" class="screen" aria-label="Seleção de evento">
+  <div class="selectbox">
+    <h1>Selecione o evento</h1>
+    <div class="choices">
+      <button class="choice" type="button" onclick="enterFaF()"><img src="./assets/e20a42cfdcc3f8e58d5f6afa.png" alt="FaF — Festival Arte em Foco"></button>
+      <button class="choice" type="button" onclick="showFaFt()"><img src="./assets/41b9438c50a4cd0c6f4d5da9.png" alt="FaFt — Festival Arte em Foco Ternura"></button>
+    </div>
+    <button class="back-select" type="button" onclick="showScreen('login')">Voltar ao login</button>
+    <div class="external-access">
+  <button class="access-pill" type="button" onclick="openRoleLogin('jury')">Acesso do Júri</button>
+  <button class="access-pill" type="button" onclick="openRoleLogin('supporter')">Acesso dos Apoiadores</button>
+</div>
+  </div>
+</section>
+
+
+
+<section id="juryLogin" class="screen" aria-label="Acesso de avaliação">
+  <div class="jury-login-shell">
+    <div class="jury-login-card">
+      <h1 id="roleLoginTitle">Acesso do Júri</h1>
+      <p id="roleLoginSubtitle">Entre com seu e-mail e senha.</p>
+      <label>E-mail<input id="juryEmail" type="email" autocomplete="email" placeholder="seu@email.com"></label>
+      <label>Senha<input id="juryPassword" type="password" autocomplete="current-password" placeholder="••••••••"></label>
+      <button type="button" class="jury-enter" onclick="enterRole()">Entrar</button>
+      <button type="button" class="jury-back" onclick="showScreen('select')">Voltar à página principal</button>
+    <p id="roleLoginStatus" role="status" aria-live="polite"></p></div>
+  </div>
+</section>
+
+<section id="roleEventSelect" class="screen" aria-label="Escolha do evento">
+  <div class="role-event-shell">
+    <div class="role-event-card">
+      <div class="role-event-head">
+        <div><h1 id="roleEventTitle">Minhas avaliações</h1><span id="roleIdentity"></span></div>
+        <button type="button" onclick="showScreen('select')">Sair</button>
+      </div>
+      <p>Escolha o evento que deseja avaliar.</p>
+      <div class="role-event-options">
+        <button type="button" onclick="openRoleEvent('faf')"><strong>FaF</strong><span>Festival Arte em Foco</span></button>
+        <button type="button" onclick="openRoleEvent('faft')"><strong>FaFt</strong><span>Festival Arte em Foco</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="juryArea" class="screen" aria-label="Avaliações do Júri">
+  <div class="role-work-shell">
+    <header class="role-work-top">
+      <div><strong id="juryEventName">FaF</strong><span>Minhas avaliações • notas de 5 a 10</span></div>
+      <div class="role-top-actions"><button type="button" onclick="showScreen('roleEventSelect')">Trocar evento</button><button type="button" onclick="showScreen('select')">Sair</button></div>
+    </header>
+    <main class="role-work-main">
+      <div class="jury-user-heading"><h1>Minhas avaliações</h1><span id="juryIdentity">Jurada(o)</span></div>
+      <div class="jury-progress"><div><strong>Pendentes</strong><span>0</span></div><div><strong>Concluídas</strong><span>0</span></div></div>
+      <div class="role-evaluation-card">
+        <div class="role-presentation"><strong>Apresentação</strong><span>As apresentações destinadas a este jurado aparecerão aqui.</span></div>
+        <div class="jury-sheet">
+          <div class="score-card"><h3>Técnica</h3><div class="score-line"><span>Execução dos movimentos</span><input type="number" min="5" max="10" step="0.1"></div><div class="score-line"><span>Leitura musical</span><input type="number" min="5" max="10" step="0.1"></div><div class="score-line"><span>Conhecimento rítmico</span><input type="number" min="5" max="10" step="0.1"></div><div class="score-line"><span>Deslocamentos</span><input type="number" min="5" max="10" step="0.1"></div></div>
+          <div class="score-card"><h3>Postura e expressão</h3><div class="score-line"><span>Expressão facial</span><input type="number" min="5" max="10" step="0.1"></div><div class="score-line"><span>Expressão corporal</span><input type="number" min="5" max="10" step="0.1"></div><div class="score-line"><span>Interpretação artística</span><input type="number" min="5" max="10" step="0.1"></div></div>
+          <div class="score-card"><h3>Coreografia</h3><div class="score-line"><span>Sincronia</span><input type="number" min="5" max="10" step="0.1"></div><div class="score-line"><span>Evolução</span><input type="number" min="5" max="10" step="0.1"></div><div class="score-line"><span>Criatividade</span><input type="number" min="5" max="10" step="0.1"></div><div class="score-line"><span>Adequação do figurino</span><input type="number" min="5" max="10" step="0.1"></div></div>
+        </div>
+        <label class="role-comments">Observações e sugestões<textarea rows="5" placeholder="Escreva aqui sua devolutiva"></textarea></label>
+        <button class="save-evaluation" type="button" disabled title="Gravação das avaliações ainda não configurada">Salvar avaliação</button>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section id="supporterArea" class="screen" aria-label="Avaliação dos Destaques">
+  <div class="role-work-shell">
+    <header class="role-work-top">
+      <div><strong id="supporterEventName">FaF</strong><span>Avaliação dos Destaques</span></div>
+      <div class="role-top-actions"><button type="button" onclick="showScreen('roleEventSelect')">Trocar evento</button><button type="button" onclick="showScreen('select')">Sair</button></div>
+    </header>
+    <main class="role-work-main">
+      <div class="jury-user-heading"><h1>Minhas avaliações</h1><span id="supporterIdentity">Apoiador</span></div>
+      <div class="jury-progress"><div><strong>Pendentes</strong><span>0</span></div><div><strong>Concluídas</strong><span>0</span></div></div>
+      <div class="role-evaluation-card">
+        <div class="role-presentation"><strong>Apresentação</strong><span>As apresentações disponíveis para avaliação aparecerão aqui.</span></div>
+        <div class="supporter-score-grid">
+          <label>Nota artística do participante<input type="number" min="5" max="10" step="0.1" placeholder="5 a 10"></label>
+          <label>Nota artística da coreografia<input type="number" min="5" max="10" step="0.1" placeholder="5 a 10"></label>
+        </div>
+        <label class="role-comments">Comentários<textarea rows="6" placeholder="Comentário do apoiador"></textarea></label>
+        <button class="save-evaluation" type="button" disabled title="Gravação das avaliações ainda não configurada">Salvar avaliação</button>
+      </div>
+    </main>
+  </div>
+</section>
+
+<section id="app" class="screen approved-home" aria-label="FaF 2027" data-event="faf"><div class="prisma-live-dashboard" aria-label="Painel Principal">
+  <aside class="pld-sidebar">
+    
+    <nav>
+      <button class="active" onclick="setPage('inicio')"><b>⌂</b><span>Início</span></button>
+      <button onclick="setPage('inscricoes')"><b>▤</b><span>Inscrições</span></button>
+      <button onclick="setPage('participantes')"><b>♙</b><span>Participantes</span></button>
+      <button onclick="setPage('categorias')"><b>☆</b><span>Categorias</span></button>
+      <button onclick="setPage('modalidades')"><b>♢</b><span>Modalidades</span></button>
+      <button onclick="setPage('escolas')"><b>▥</b><span>Escolas</span></button>
+      <button onclick="setPage('juri')"><b>♧</b><span>Júri</span></button>
+      <button onclick="setPage('resultados')"><b>▥</b><span>Resultados</span></button>
+      <i></i>
+      <button onclick="setPage('configuracoes')"><b>⚙</b><span>Configurações</span></button>
+    </nav>
+  </aside>
+  <div class="pld-main">
+    <header class="pld-topbar">
+      <div class="pld-events"><button class="selected" onclick="setPage('inicio')">FaF⌄</button><button onclick="showFaFt()">FaFt⌄</button></div>
+      <div class="pld-user"><span class="bell">♧</span><span class="avatar">◯</span><span><strong>Olá, Nahid</strong><small>Administradora</small></span><span>⌄</span></div>
+    </header>
+    <main class="pld-content">
+      <h1>Painel Principal</h1><div class="pld-title-rule"></div>
+      <section class="pld-metrics">
+        <button onclick="setPage('inscricoes')"><em>▤</em><span>Inscrições<strong>0</strong></span></button>
+        <button onclick="setPage('participantes')"><em>♙</em><span>Participantes<strong>0</strong></span></button>
+        <button onclick="setPage('escolas')"><em>▥</em><span>Escolas<strong>0</strong></span></button>
+        <button onclick="setPage('categorias')"><em>☆</em><span>Categorias<strong>0</strong></span></button>
+        <button onclick="setPage('modalidades')"><em>♢</em><span>Modalidades<strong>0</strong></span></button>
+      </section>
+      <section class="pld-panel pld-timeline"><h2>Linha do Tempo</h2><div class="timeline"><span class="done">✓<small>Inscrições</small></span><span class="done">✓<small>Avaliação</small></span><span><small>Evento</small></span><span><small>Divulgação dos resultados</small></span></div></section>
+      <section class="pld-panel pld-quick"><h2>Acesso Rápido</h2><div>
+        <button onclick="setPage('inscricoes')"><em>▤⁺</em>Nova Inscrição</button><button onclick="setPage('escolas')"><em>▥⁺</em>Nova Escola</button><button onclick="setPage('categorias')"><em>☆</em>Gerenciar Categorias</button><button onclick="setPage('modalidades')"><em>♢</em>Gerenciar Modalidades</button><button onclick="setPage('juri')"><em>♧</em>Área do Júri</button>
+      </div></section>
+      <section class="pld-panel pld-table"><div class="table-head"><h2>Últimas Inscrições</h2><button onclick="setPage('inscricoes')">Ver todas →</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Nome / Grupo</th><th>Escola</th><th>Modalidade</th><th>Categoria</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pld-latest-faf"></tbody></table></div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="prisma-art-frame panel-art-frame" aria-hidden="true"><svg class="approved-panel-art" viewBox="0 0 1536 1024"><use href="#prisma-panel-source"/></svg><svg class="prisma-art-edge left" viewBox="0 0 96 1024" preserveAspectRatio="none"><use href="#prisma-login-source"/></svg><svg class="prisma-art-edge right" viewBox="1440 0 96 1024" preserveAspectRatio="none"><use href="#prisma-login-source"/></svg><svg class="prisma-art-edge top" viewBox="0 0 1536 64" preserveAspectRatio="none"><use href="#prisma-login-source"/></svg><svg class="prisma-art-edge bottom" viewBox="0 960 1536 64" preserveAspectRatio="none"><use href="#prisma-login-source"/></svg></div><div class="approved-panel-stage" aria-label="Painel Principal FaF 2027"><button class="panel-back" type="button" onclick="showScreen('select')" aria-label="Voltar para seleção de evento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6M8 12h12"/></svg><span>Voltar</span></button>
+  
+  <button class="p-faf" onclick="setPage('inicio')" aria-label="FaF">FaF</button>
+  <button class="p-faft" onclick="showFaFt()" aria-label="FaFt">FaFt</button>
+  <button class="p-inicio" onclick="setPage('inicio')" aria-label="Início">Início</button>
+  <button class="p-inscricoes" onclick="setPage('inscricoes')" aria-label="Inscrições">Inscrições</button>
+  <button class="p-participantes" onclick="setPage('participantes')" aria-label="Participantes">Participantes</button>
+  <button class="p-categorias" onclick="setPage('categorias')" aria-label="Categorias">Categorias</button>
+  <button class="p-modalidades" onclick="setPage('modalidades')" aria-label="Modalidades">Modalidades</button>
+  <button class="p-escolas" onclick="setPage('escolas')" aria-label="Escolas">Escolas</button>
+  <button class="p-juri" onclick="setPage('juri')" aria-label="Júri">Júri</button>
+  <button class="p-resultados" onclick="setPage('resultados')" aria-label="Resultados">Resultados</button>
+  <button class="p-config" onclick="setPage('configuracoes')" aria-label="Configurações">Configurações</button>
+  <button class="p-card-inscricoes" onclick="setPage('inscricoes')" aria-label="Inscrições"></button>
+  <button class="p-card-participantes" onclick="setPage('participantes')" aria-label="Participantes"></button>
+  <button class="p-card-escolas" onclick="setPage('escolas')" aria-label="Escolas"></button>
+  <button class="p-card-categorias" onclick="setPage('categorias')" aria-label="Categorias"></button>
+  <button class="p-card-modalidades" onclick="setPage('modalidades')" aria-label="Modalidades"></button>
+  <button class="p-quick-inscricoes" onclick="setPage('inscricoes')" aria-label="Nova inscrição"></button>
+  <button class="p-quick-participantes" onclick="setPage('participantes')" aria-label="Novo participante"></button>
+  <button class="p-quick-escolas" onclick="setPage('escolas')" aria-label="Nova escola"></button>
+  <button class="p-quick-categorias" onclick="setPage('categorias')" aria-label="Gerenciar categorias"></button>
+  <button class="p-quick-modalidades" onclick="setPage('modalidades')" aria-label="Gerenciar modalidades"></button>
+  <button class="p-quick-juri" onclick="setPage('juri')" aria-label="Área do Júri"></button>
+  <button class="p-ver-todas" onclick="setPage('inscricoes')" aria-label="Ver todas as inscrições"></button>
+</div><div class="prisma-shell"><aside class="prisma-side"><div class="prisma-brand"><img src="./assets/e20a42cfdcc3f8e58d5f6afa.png" alt="FaF 2027 — Festival Arte em Foco"></div><nav class="prisma-nav" aria-label="Navegação do FaF 2027"><button class="prisma-nav-btn active" type="button" data-event="faf" data-view="inicio" aria-current="page"><span class="ico" aria-hidden="true"><svg viewbox="0 0 24 24"><path d="m3 10 9-7 9 7M5 9v11h5v-6h4v6h5V9"></path></svg></span><span>Início</span></button><button class="prisma-nav-btn" type="button" data-event="faf" data-view="inscricoes" aria-current="false"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21V8l6-4 6 4v13M1 21h22M6 11h1M11 11h1M6 15h1M11 15h1M8 21v-3h3v3"/><rect x="16" y="10" width="6" height="9" rx="1"/><path d="M18 13h2M18 16h2"/></svg></span><span>Escolas / Inscrições</span></button><button class="prisma-nav-btn" type="button" data-event="faf" data-view="juri" aria-current="false"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5 21v-2a7 7 0 0 1 14 0v2M16 4l1 1 3-3"/></svg></span><span>Júri</span></button><button class="prisma-nav-btn" type="button" data-event="faf" data-view="destaques" aria-current="false"><span class="ico" aria-hidden="true"><svg viewbox="0 0 24 24"><path d="M12 2c1 6 4 9 10 10-6 1-9 4-10 10-1-6-4-9-10-10 6-1 9-4 10-10z"></path></svg></span><span>Destaques</span></button><button class="prisma-nav-btn" type="button" data-event="faf" data-view="resultados" aria-current="false"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 21V12h6v9M8 21V7h8v14M16 21v-9h6v9M1 21h22M10 3h4"/></svg></span><span>Resultados</span></button></nav></aside><main class="prisma-main"><header class="prisma-header"><button type="button" class="prisma-back" onclick="showScreen('select')"><svg viewbox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6M8 12h12"></path></svg><span>Voltar</span></button><div class="prisma-event"><strong>FaF 2027</strong><span>Administração</span></div><button type="button" class="prisma-exit" onclick="showScreen('login')">Sair</button></header><div class="prisma-work"><section class="prisma-page active" id="faf-inicio" data-view="inicio" aria-label="Início"><div class="home-wrap">
+<div class="home-head"><div><h2>Início</h2><span>FaF 2027 · Festival Arte em Foco</span></div></div>
+<div class="home-summary"><div class="home-stat"><span>Inscrições</span><strong>0</strong></div><div class="home-stat"><span>Participantes</span><strong>0</strong></div><div class="home-stat"><span>Escolas</span><strong>0</strong></div><div class="home-stat"><span>Coreografias</span><strong>0</strong></div></div>
+<div class="home-columns"><section class="home-panel"><h3>Inscrições por escola</h3><div class="home-empty">Escolas e total de inscrições.</div></section><section class="home-panel"><h3>Situação das inscrições</h3><div class="status-grid"><div><span>Pagas</span><strong>0</strong></div><div><span>Pendentes</span><strong>0</strong></div><div><span>Confirmadas</span><strong>0</strong></div><div><span>Incompletas</span><strong>0</strong></div></div><div class="check-line"><span>Formulário</span><span>Foto</span><span>Pagamento</span><span>Vídeo</span></div></section></div>
+<section class="home-panel"><h3>Precisa de atenção</h3><div class="home-empty">Pendências aparecerão aqui.</div></section>
+</div></section>
+
+<section class="prisma-page" id="faf-inscricoes" data-view="inscricoes" aria-label="Escolas / Inscrições"></section><section class="prisma-page" id="faf-participantes" data-view="participantes" aria-label="Participantes"></section><section class="prisma-page" id="faf-juri" aria-label="Júri" data-view="juri">
+<div class="module-wrap">
+  <div class="module-head"><h2>Júri</h2></div>
+  <div class="juror-grid">
+    <button class="juror-card" type="button" aria-label="Tati Neri">
+      <img src="./assets/44dab8612f310ea267c95804.png" alt="Tati Neri">
+      <span>Tati Neri</span>
+    </button>
+<button class="juror-card" type="button" aria-label="Cassiano Rodrigues">
+      <img src="./assets/d0b505cb51c0894c5bcd2e34.png" alt="Cassiano Rodrigues">
+      <span>Cassiano Rodrigues</span>
+    </button>
+<button class="juror-card" type="button" aria-label="Manu Marques">
+      <img src="./assets/12b3a91e4c01d09e29d28dba.png" alt="Manu Marques">
+      <span>Manu Marques</span>
+    </button>
+<button class="juror-card" type="button" aria-label="Magda El Nil">
+      <img src="./assets/86ad97188009a8ed1a1fd1e6.png" alt="Magda El Nil">
+      <span>Magda El Nil</span>
+    </button>
+<button class="juror-card" type="button" aria-label="Nahid Phoenix">
+      <img src="./assets/b46608714d67d04ce0a50d3a.png" alt="Nahid Phoenix">
+      <span>Nahid Phoenix</span>
+    </button>
+<button class="juror-card" type="button" aria-label="Rawnie El Lamya'">
+      <img src="./assets/9d8641a43ea9d7d7a9e8940e.png" alt="Rawnie El Lamya'">
+      <span>Rawnie El Lamya'</span>
+    </button>
+  </div>
+  <div class="jury-workspace">
+    <div class="jury-title"><strong>Avaliações</strong><span>Notas de 5 a 10</span></div>
+  <div class="admin-progress-line"><span>Acesso dos jurados</span><strong>Não configurado</strong><span>Avaliações gravadas</span><strong>—</strong></div><div class="jury-sheet">
+      <div class="score-card"><h3>Técnica</h3><div class="score-line"><span>Execução dos movimentos</span><span>Nota</span></div><div class="score-line"><span>Leitura musical</span><span>Nota</span></div><div class="score-line"><span>Conhecimento rítmico</span><span>Nota</span></div><div class="score-line"><span>Deslocamentos</span><span>Nota</span></div></div>
+      <div class="score-card"><h3>Postura e expressão</h3><div class="score-line"><span>Expressão facial</span><span>Nota</span></div><div class="score-line"><span>Expressão corporal</span><span>Nota</span></div><div class="score-line"><span>Interpretação artística</span><span>Nota</span></div></div>
+      <div class="score-card"><h3>Coreografia</h3><div class="score-line"><span>Sincronia</span><span>Nota</span></div><div class="score-line"><span>Evolução</span><span>Nota</span></div><div class="score-line"><span>Criatividade</span><span>Nota</span></div><div class="score-line"><span>Adequação do figurino</span><span>Nota</span></div></div>
+    </div>
+    <div class="group-card"><h3>Feedback</h3><div class="dance-row"><b>Observações e sugestões</b><small>Espaço destinado ao parecer do jurado.</small></div></div>
+  </div>
+</div>
+</section>
+<section class="prisma-page" id="faf-destaques" data-view="destaques" aria-label="Destaques"><div class="module-wrap">
+<div class="module-head"><h2>Destaques</h2><span class="module-note">Avaliação dos apoiadores</span></div>
+<div class="supporter-grid"><button class="supporter-card" type="button"><img src="./assets/a03bf15d1d86ce532dcbce03.jpg" alt="Tatooine Figures"><span>Tatooine Figures</span></button>
+<button class="supporter-card" type="button"><img src="./assets/ee6f7cfb0c42e733be90ac84.jpg" alt="Mingmen Acupuntura"><span>Mingmen Acupuntura</span></button>
+<button class="supporter-card" type="button"><img src="./assets/859bcd9e5dd58be0391cce3b.jpg" alt="Nery 23"><span>Nery 23</span></button>
+<button class="supporter-card" type="button"><img src="./assets/cfc18715f4e10e19771f85c7.jpg" alt="Pedra da Lua"><span>Pedra da Lua</span></button>
+<button class="supporter-card" type="button"><img src="./assets/d369db2fed9797eafa621e8f.jpg" alt="Tapidindo Tapioca"><span>Tapidindo Tapioca</span></button></div>
+
+  <div class="highlight-tabs">
+    <button class="split-tab active" type="button">Destaque</button>
+    <button class="split-tab" type="button">Revelação</button>
+  </div>
+<div class="highlight-layout">
+<div class="highlight-eval"><div class="highlight-head"><div><strong>Avaliação artística</strong><span>Notas de 5 a 10</span></div><span class="highlight-progress">Nenhuma avaliação gravada</span></div>
+<div class="highlight-fields"><label>Participante<select><option>Selecione</option></select></label><label>Coreografia<select><option>Selecione</option></select></label><label>Nota artística do participante<input type="number" min="5" max="10" step="0.1" placeholder="5 a 10"></label><label>Nota artística da coreografia<input type="number" min="5" max="10" step="0.1" placeholder="5 a 10"></label><label class="comment-field">Comentários<textarea rows="5" placeholder="Comentário do apoiador"></textarea></label></div></div>
+<div class="highlight-result"><h3>Apuração</h3><div class="result-categories"><span>Bailarina</span><span>Bailarino</span><span>Dupla</span><span>Trio</span><span>Grupo</span><span>Coreografia</span></div><div class="highlight-empty"><strong>Aguardando avaliações.</strong><span>Ainda não há avaliações gravadas para este evento.</span></div><div class="rule-note">Empates permanecem sinalizados para decisão da Administração. Quando a regra de elegibilidade exigir, o sistema apresenta a próxima maior média elegível.</div></div>
+</div></div></section>
+<section class="prisma-page" id="faf-resultados" aria-label="Resultados" data-view="resultados">
+<div class="module-wrap">
+  <div class="module-head"><h2>Resultados</h2></div>
+  <div class="result-tabs">
+    <span class="result-tab">Solo</span><span class="result-tab">Dupla</span><span class="result-tab">Trio</span><span class="result-tab">Grupo</span><span class="result-tab">Destaques</span>
+  </div>
+  <div class="result-board">
+    <table><thead><tr><th>Participante / Escola</th><th>Coreografia</th><th>Categoria</th><th>Modalidade</th><th>Média</th><th>Colocação</th></tr></thead>
+    <tbody><tr><td colspan="6" style="text-align:center;padding:42px;color:rgba(23,36,111,.62)">Os resultados serão preenchidos a partir das avaliações do júri.</td></tr></tbody></table>
+  </div>
+</div>
+</section></div></main></div></section><section id="faftPending" class="screen approved-home" aria-label="FaFt" data-event="faft"><div class="prisma-live-dashboard" aria-label="Painel Principal">
+  <aside class="pld-sidebar">
+    
+    <nav>
+      <button class="active" onclick="setEventPage('faft','inicio')"><b>⌂</b><span>Início</span></button>
+      <button onclick="setEventPage('faft','inscricoes')"><b>▤</b><span>Inscrições</span></button>
+      <button onclick="setEventPage('faft','participantes')"><b>♙</b><span>Participantes</span></button>
+      <button onclick="setEventPage('faft','categorias')"><b>☆</b><span>Categorias</span></button>
+      <button onclick="setEventPage('faft','modalidades')"><b>♢</b><span>Modalidades</span></button>
+      <button onclick="setEventPage('faft','escolas')"><b>▥</b><span>Escolas</span></button>
+      <button onclick="setEventPage('faft','juri')"><b>♧</b><span>Júri</span></button>
+      <button onclick="setEventPage('faft','resultados')"><b>▥</b><span>Resultados</span></button>
+      <i></i>
+      <button onclick="setEventPage('faft','configuracoes')"><b>⚙</b><span>Configurações</span></button>
+    </nav>
+  </aside>
+  <div class="pld-main">
+    <header class="pld-topbar">
+      <div class="pld-events"><button onclick="enterFaF()">FaF⌄</button><button class="selected" onclick="showFaFt()">FaFt⌄</button></div>
+      <div class="pld-user"><span class="bell">♧</span><span class="avatar">◯</span><span><strong>Olá, Nahid</strong><small>Administradora</small></span><span>⌄</span></div>
+    </header>
+    <main class="pld-content">
+      <h1>Painel Principal</h1><div class="pld-title-rule"></div>
+      <section class="pld-metrics">
+        <button onclick="setEventPage('faft','inscricoes')"><em>▤</em><span>Inscrições<strong>0</strong></span></button>
+        <button onclick="setEventPage('faft','participantes')"><em>♙</em><span>Participantes<strong>0</strong></span></button>
+        <button onclick="setEventPage('faft','escolas')"><em>▥</em><span>Escolas<strong>0</strong></span></button>
+        <button onclick="setEventPage('faft','categorias')"><em>☆</em><span>Categorias<strong>28</strong></span></button>
+        <button onclick="setEventPage('faft','modalidades')"><em>♢</em><span>Modalidades<strong>12</strong></span></button>
+      </section>
+      <section class="pld-panel pld-timeline"><h2>Linha do Tempo</h2><div class="timeline"><span class="done">✓<small>Inscrições</small></span><span class="done">✓<small>Avaliação</small></span><span><small>Evento</small></span><span><small>Divulgação dos resultados</small></span></div></section>
+      <section class="pld-panel pld-quick"><h2>Acesso Rápido</h2><div>
+        <button onclick="setEventPage('faft','inscricoes')"><em>▤⁺</em>Nova Inscrição</button><button onclick="setEventPage('faft','escolas')"><em>▥⁺</em>Nova Escola</button><button onclick="setEventPage('faft','categorias')"><em>☆</em>Gerenciar Categorias</button><button onclick="setEventPage('faft','modalidades')"><em>♢</em>Gerenciar Modalidades</button><button onclick="setEventPage('faft','juri')"><em>♧</em>Área do Júri</button>
+      </div></section>
+      <section class="pld-panel pld-table"><div class="table-head"><h2>Últimas Inscrições</h2><button onclick="setEventPage('faft','inscricoes')">Ver todas →</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Nome / Grupo</th><th>Escola</th><th>Modalidade</th><th>Categoria</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pld-latest-faft"></tbody></table></div>
+      </section>
+    </main>
+  </div>
+</div><div class="prisma-shell"><aside class="prisma-side"><div class="prisma-brand"><img src="./assets/41b9438c50a4cd0c6f4d5da9.png" alt="FaFt — Festival Arte em Foco"></div><nav class="prisma-nav" aria-label="Navegação do FaFt"><button class="prisma-nav-btn active" type="button" data-event="faft" data-view="inicio" aria-current="page"><span class="ico" aria-hidden="true"><svg viewbox="0 0 24 24"><path d="m3 10 9-7 9 7M5 9v11h5v-6h4v6h5V9"></path></svg></span><span>Início</span></button><button class="prisma-nav-btn" type="button" data-event="faft" data-view="inscricoes" aria-current="false"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21V8l6-4 6 4v13M1 21h22M6 11h1M11 11h1M6 15h1M11 15h1M8 21v-3h3v3"/><rect x="16" y="10" width="6" height="9" rx="1"/><path d="M18 13h2M18 16h2"/></svg></span><span>Escolas / Inscrições</span></button><button class="prisma-nav-btn" type="button" data-event="faft" data-view="juri" aria-current="false"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5 21v-2a7 7 0 0 1 14 0v2M16 4l1 1 3-3"/></svg></span><span>Júri</span></button><button class="prisma-nav-btn" type="button" data-event="faft" data-view="destaques" aria-current="false"><span class="ico" aria-hidden="true"><svg viewbox="0 0 24 24"><path d="M12 2c1 6 4 9 10 10-6 1-9 4-10 10-1-6-4-9-10-10 6-1 9-4 10-10z"></path></svg></span><span>Destaques</span></button><button class="prisma-nav-btn" type="button" data-event="faft" data-view="resultados" aria-current="false"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 21V12h6v9M8 21V7h8v14M16 21v-9h6v9M1 21h22M10 3h4"/></svg></span><span>Resultados</span></button></nav></aside><main class="prisma-main"><header class="prisma-header"><button type="button" class="prisma-back" onclick="showScreen('select')"><svg viewbox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6M8 12h12"></path></svg><span>Voltar</span></button><div class="prisma-event"><strong>FaFt</strong><span>Administração</span></div><button type="button" class="prisma-exit" onclick="showScreen('login')">Sair</button></header><div class="prisma-work"><section class="prisma-page active" id="faft-inicio" data-view="inicio" aria-label="Início"><div class="home-wrap">
+<div class="home-head"><div><h2>Início</h2><span>FaFt · Festival Arte em Foco</span></div></div>
+<div class="home-summary"><div class="home-stat"><span>Inscrições</span><strong>0</strong></div><div class="home-stat"><span>Participantes</span><strong>0</strong></div><div class="home-stat"><span>Escolas</span><strong>0</strong></div><div class="home-stat"><span>Coreografias</span><strong>0</strong></div></div>
+<div class="home-columns"><section class="home-panel"><h3>Inscrições por escola</h3><div class="home-empty">Escolas e total de inscrições.</div></section><section class="home-panel"><h3>Situação das inscrições</h3><div class="status-grid"><div><span>Pagas</span><strong>0</strong></div><div><span>Pendentes</span><strong>0</strong></div><div><span>Confirmadas</span><strong>0</strong></div><div><span>Incompletas</span><strong>0</strong></div></div><div class="check-line"><span>Formulário</span><span>Foto</span><span>Pagamento</span><span>Vídeo</span></div></section></div>
+<section class="home-panel"><h3>Precisa de atenção</h3><div class="home-empty">Pendências aparecerão aqui.</div></section>
+</div></section>
+
+<section class="prisma-page" id="faft-inscricoes" data-view="inscricoes" aria-label="Escolas / Inscrições"></section><section class="prisma-page" id="faft-participantes" data-view="participantes" aria-label="Participantes"></section><section class="prisma-page" id="faft-juri" aria-label="Júri" data-view="juri">
+<div class="module-wrap">
+  <div class="module-head"><h2>Júri</h2></div>
+  <div class="juror-grid">
+    <button class="juror-card" type="button" aria-label="Tati Neri">
+      <img src="./assets/44dab8612f310ea267c95804.png" alt="Tati Neri">
+      <span>Tati Neri</span>
+    </button>
+<button class="juror-card" type="button" aria-label="Cassiano Rodrigues">
+      <img src="./assets/d0b505cb51c0894c5bcd2e34.png" alt="Cassiano Rodrigues">
+      <span>Cassiano Rodrigues</span>
+    </button>
+<button class="juror-card" type="button" aria-label="Manu Marques">
+      <img src="./assets/12b3a91e4c01d09e29d28dba.png" alt="Manu Marques">
+      <span>Manu Marques</span>
+    </button>
+<button class="juror-card" type="button" aria-label="Magda El Nil">
+      <img src="./assets/86ad97188009a8ed1a1fd1e6.png" alt="Magda El Nil">
+      <span>Magda El Nil</span>
+    </button>
+<button class="juror-card" type="button" aria-label="Nahid Phoenix">
+      <img src="./assets/b46608714d67d04ce0a50d3a.png" alt="Nahid Phoenix">
+      <span>Nahid Phoenix</span>
+    </button>
+<button class="juror-card" type="button" aria-label="Rawnie El Lamya'">
+      <img src="./assets/9d8641a43ea9d7d7a9e8940e.png" alt="Rawnie El Lamya'">
+      <span>Rawnie El Lamya'</span>
+    </button>
+  </div>
+  <div class="jury-workspace">
+    <div class="jury-title"><strong>Avaliações</strong><span>Notas de 5 a 10</span></div>
+  <div class="admin-progress-line"><span>Acesso dos jurados</span><strong>Não configurado</strong><span>Avaliações gravadas</span><strong>—</strong></div><div class="jury-sheet">
+      <div class="score-card"><h3>Técnica</h3><div class="score-line"><span>Execução dos movimentos</span><span>Nota</span></div><div class="score-line"><span>Leitura musical</span><span>Nota</span></div><div class="score-line"><span>Conhecimento rítmico</span><span>Nota</span></div><div class="score-line"><span>Deslocamentos</span><span>Nota</span></div></div>
+      <div class="score-card"><h3>Postura e expressão</h3><div class="score-line"><span>Expressão facial</span><span>Nota</span></div><div class="score-line"><span>Expressão corporal</span><span>Nota</span></div><div class="score-line"><span>Interpretação artística</span><span>Nota</span></div></div>
+      <div class="score-card"><h3>Coreografia</h3><div class="score-line"><span>Sincronia</span><span>Nota</span></div><div class="score-line"><span>Evolução</span><span>Nota</span></div><div class="score-line"><span>Criatividade</span><span>Nota</span></div><div class="score-line"><span>Adequação do figurino</span><span>Nota</span></div></div>
+    </div>
+    <div class="group-card"><h3>Feedback</h3><div class="dance-row"><b>Observações e sugestões</b><small>Espaço destinado ao parecer do jurado.</small></div></div>
+  </div>
+</div>
+</section>
+<section class="prisma-page" id="faft-destaques" data-view="destaques" aria-label="Destaques"><div class="module-wrap">
+<div class="module-head"><h2>Destaques</h2><span class="module-note">Avaliação dos apoiadores</span></div>
+<div class="supporter-grid"><button class="supporter-card" type="button"><img src="./assets/a03bf15d1d86ce532dcbce03.jpg" alt="Tatooine Figures"><span>Tatooine Figures</span></button>
+<button class="supporter-card" type="button"><img src="./assets/ee6f7cfb0c42e733be90ac84.jpg" alt="Mingmen Acupuntura"><span>Mingmen Acupuntura</span></button>
+<button class="supporter-card" type="button"><img src="./assets/859bcd9e5dd58be0391cce3b.jpg" alt="Nery 23"><span>Nery 23</span></button>
+<button class="supporter-card" type="button"><img src="./assets/cfc18715f4e10e19771f85c7.jpg" alt="Pedra da Lua"><span>Pedra da Lua</span></button>
+<button class="supporter-card" type="button"><img src="./assets/d369db2fed9797eafa621e8f.jpg" alt="Tapidindo Tapioca"><span>Tapidindo Tapioca</span></button></div>
+
+  <div class="highlight-tabs">
+    <button class="split-tab active" type="button">Destaque</button>
+    <button class="split-tab" type="button">Revelação</button>
+  </div>
+<div class="highlight-layout">
+<div class="highlight-eval"><div class="highlight-head"><div><strong>Avaliação artística</strong><span>Notas de 5 a 10</span></div><span class="highlight-progress">Nenhuma avaliação gravada</span></div>
+<div class="highlight-fields"><label>Participante<select><option>Selecione</option></select></label><label>Coreografia<select><option>Selecione</option></select></label><label>Nota artística do participante<input type="number" min="5" max="10" step="0.1" placeholder="5 a 10"></label><label>Nota artística da coreografia<input type="number" min="5" max="10" step="0.1" placeholder="5 a 10"></label><label class="comment-field">Comentários<textarea rows="5" placeholder="Comentário do apoiador"></textarea></label></div></div>
+<div class="highlight-result"><h3>Apuração</h3><div class="result-categories"><span>Bailarina</span><span>Bailarino</span><span>Dupla</span><span>Trio</span><span>Grupo</span><span>Coreografia</span></div><div class="highlight-empty"><strong>Aguardando avaliações.</strong><span>Ainda não há avaliações gravadas para este evento.</span></div><div class="rule-note">Empates permanecem sinalizados para decisão da Administração. Quando a regra de elegibilidade exigir, o sistema apresenta a próxima maior média elegível.</div></div>
+</div></div></section>
+<section class="prisma-page" id="faft-resultados" aria-label="Resultados" data-view="resultados">
+<div class="module-wrap">
+  <div class="module-head"><h2>Resultados</h2></div>
+  <div class="result-tabs">
+    <span class="result-tab">Solo</span><span class="result-tab">Dupla</span><span class="result-tab">Trio</span><span class="result-tab">Grupo</span><span class="result-tab">Destaques</span>
+  </div>
+  <div class="result-board">
+    <table><thead><tr><th>Participante / Escola</th><th>Coreografia</th><th>Categoria</th><th>Modalidade</th><th>Média</th><th>Colocação</th></tr></thead>
+    <tbody><tr><td colspan="6" style="text-align:center;padding:42px;color:rgba(23,36,111,.62)">Os resultados serão preenchidos a partir das avaliações do júri.</td></tr></tbody></table>
+  </div>
+</div>
+</section></div></main></div></section><script id="prisma-integration-config" type="application/json">{"faf":{"source":"google_forms","formId":"1ptnDXX8s5P9tj97YugGhH32XYKnnM2WaEIyNfujhJNg","responseSheetId":null},"faft":{"source":"google_forms","formId":null,"responseSheetId":"1plI-kYogU9Z2BfIUBrld2FYGQ5vIGONw7mzxyAINrHM"},"distribution":["inscricoes","participantes","categorias","modalidades","inicio"],"confirmation":["formulario","foto","pagamento","video"]}</script>
+<script>
+let FAFT_REAL_ROWS=[];window.prismaLoadEnrollments=function(rows){FAFT_REAL_ROWS=rows;renderTestData();};
+function normText(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toUpperCase()}
+function canonicalSchool(v){const n=normText(v); if(n==='STUDIO CENOQUIA')return 'STUDIO CENÓQUIA'; return String(v||'').trim()}
+function nonNA(v){return v && normText(v)!=='NAO SE APLICA'}
+function modalityOf(r){for(const k of ['ballet','belly','folklore','diverse'])if(nonNA(r[k]))return r[k];return 'Não informado'}
+function formationOf(r){if(nonNA(r.collective))return r.collective;if(nonNA(r.solo))return 'Solo';return 'Não informado'}
+function subcategoryOf(r){return nonNA(r.solo)?r.solo:r.category}
+function parseParticipants(raw){return String(raw||'').split(/\n+/).map(x=>x.trim()).filter(Boolean).map(line=>{
+ const m=line.match(/^(.*?)\s*-\s*(\d{2}\/\d{2}\/\d{4}|\d+\s*anos?)\s*$/i);return {name:(m?m[1]:line).trim(),detail:m?m[2]:''};
+})}
+function ageFrom(detail){if(!detail)return '';const y=detail.match(/^(\d+)\s*anos?/i);if(y)return y[1];const m=detail.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return detail;const d=new Date(+m[3],+m[2]-1,+m[1]),ref=new Date(2026,9,5);let a=ref.getFullYear()-d.getFullYear();if(ref<new Date(ref.getFullYear(),d.getMonth(),d.getDate()))a--;return a;}
+function esc2(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function faftRecords(){return FAFT_REAL_ROWS.map((r,i)=>({...r,id:'faft-real-'+(i+1),school:canonicalSchool(r.school),modality:modalityOf(r),formation:formationOf(r),subcategory:subcategoryOf(r),people:parseParticipants(r.participants),payment:'A conferir'}))}
+function groupBy(list,keyFn){const m=new Map();list.forEach(x=>{const k=keyFn(x);if(!m.has(k))m.set(k,[]);m.get(k).push(x)});return [...m.entries()]}
+function detailsRow(summary, rows, cols=6){return `<tr class="accordion-head"><td colspan="${cols}"><details><summary>${summary}</summary><div class="accordion-body">${rows}</div></details></td></tr>`}
+</script>
+
+<div id="testEnrollmentPanel" class="test-panel">
+  <div class="test-head"><div><strong>Simular inscrição</strong><span>Teste interno do fluxo do Prisma</span></div><button type="button" onclick="toggleTestPanel()">×</button></div>
+  <div class="test-grid">
+    <label>Evento<select id="tEvent"><option value="faf">FaF</option><option value="faft">FaFt</option></select></label>
+    <label>Tipo<select id="tType"><option>Concurso</option><option>Mostra</option></select></label>
+    <label>Escola<input id="tSchool" placeholder="Nome da escola"></label>
+    <label>Responsável<input id="tResponsible" placeholder="Responsável"></label>
+    <label>Participante<input id="tParticipant" placeholder="Nome do participante"></label>
+    <label>Idade<input id="tAge" type="number" min="1"></label>
+    <label>Coreografia<input id="tChoreo" placeholder="Nome da coreografia"></label>
+    <label>Categoria<input id="tCategory" placeholder="Categoria"></label>
+    <label>Modalidade<input id="tModality" placeholder="Modalidade"></label>
+    <label>Pagamento<select id="tPayment"><option value="Pago">Pago</option><option value="Pendente">Pendente</option></select></label>
+    <label>Foto<select id="tPhoto"><option value="Sim">Sim</option><option value="Não">Não</option></select></label>
+    <label>Vídeo<select id="tVideo"><option value="Sim">Sim</option><option value="Não">Não</option></select></label>
+  </div>
+  <button class="test-submit" type="button" onclick="simulateEnrollment()">Enviar inscrição de teste</button>
+  <button class="test-clear" type="button" onclick="clearTestData()">Limpar dados de teste</button>
+</div>
+
+
+<script id="prisma-shared-event-controller">const EVENT_CONFIG={faf:{screen:'app',label:'FaF 2027'},faft:{screen:'faftPending',label:'FaFt'}};
+const TEST_KEY='prisma_test_enrollments_v1';
+let currentRole='jury';
+function showScreen(id){
+ const target=document.getElementById(id);if(!target)return;
+ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s===target));
+}
+function setEventPage(event,view){
+ const root=document.getElementById(EVENT_CONFIG[event]?.screen);if(!root)return;
+ const target=root.querySelector('.prisma-page[data-view="'+view+'"]');if(!target)return;
+ root.querySelectorAll('.prisma-page').forEach(p=>p.classList.toggle('active',p===target));
+ root.querySelectorAll('.prisma-nav-btn').forEach(b=>{const active=b.dataset.view===view;b.classList.toggle('active',active);b.setAttribute('aria-current',active?'page':'false')});
+}
+function setPage(view){setEventPage('faf',view)}
+function enterFaF(){showScreen('app');setEventPage('faf','inicio')}
+function showFaFt(){showScreen('faftPending');setEventPage('faft','inicio')}
+function openRoleLogin(role){currentRole=role;document.getElementById('roleLoginTitle').textContent=role==='jury'?'Acesso do Júri':'Acesso dos Apoiadores';document.getElementById('roleLoginStatus').textContent='';document.getElementById('juryPassword').value='';showScreen('juryLogin')}
+function enterRole(){document.getElementById('juryPassword').value='';document.getElementById('roleLoginStatus').textContent='Entre com seu e-mail e senha. Nenhuma sessão foi iniciada.'}
+function openRoleEvent(){showScreen('juryLogin');document.getElementById('roleLoginStatus').textContent='Entre com seu e-mail e senha.'}
+function switchType(btn,type){const wrap=btn.closest('.module-wrap');if(!wrap)return;btn.parentElement.querySelectorAll('.split-tab').forEach(b=>b.classList.toggle('active',b===btn));wrap.querySelectorAll('[data-type-view]').forEach(v=>v.classList.toggle('type-view-hidden',v.dataset.typeView!==type))}
+function getTestEnrollments(){try{const rows=JSON.parse(localStorage.getItem(TEST_KEY)||'[]');return Array.isArray(rows)?rows:[]}catch{return[]}}
+function toggleTestPanel(){document.getElementById('testEnrollmentPanel').classList.toggle('open')}
+function esc(v){return esc2(v)}
+function normalizedTest(r){return {...r,school:canonicalSchool(r.school),people:[{name:r.participant,detail:r.age?r.age+' anos':''}],formation:r.formation||'',subcategory:r.category,certificate:r.participant}}
+function eventRecords(event){const source=event==='faft'?faftRecords():[];return source.concat(getTestEnrollments().filter(r=>r.event===event).map(normalizedTest))}
+function countLabel(n,one,many){return n+' '+(n===1?one:many)}
+function emptyState(text){return '<div class="module-empty">'+esc2(text)+'</div>'}
+function field(label,value){return '<div><span>'+esc2(label)+'</span><b>'+esc2(value??'—')+'</b></div>'}
+const SCHOOL_CONTACTS={};
+function formationDetails(r){const explicit=nonNA(r.collective)?r.collective:r.formation;const solo=(explicit&&normText(explicit)==='SOLO')||(!explicit&&r.people.length===1);return {solo,formation:explicit||(solo?'Solo':'Coletivo'),category:solo?(nonNA(r.solo)?r.solo:r.category):(explicit||'Coletivo'),name:solo?(r.people[0]?.name||r.certificate||r.school):(r.certificate||r.school)}}
+function renderEvent(event){
+ const cfg=EVENT_CONFIG[event],root=document.getElementById(cfg.screen),rows=eventRecords(event);
+ const groups=groupBy(rows,r=>r.school).sort((a,b)=>a[0].localeCompare(b[0],'pt-BR'));
+ root.querySelector('.prisma-page[data-view="inscricoes"]').innerHTML='<div class="module-wrap"><div class="module-head"><h2>Escolas / Inscrições</h2></div><div class="compact-list school-enrollments">'+(groups.length?groups.map(([name,list])=>{
+  const x=list[0],contact=event==='faft'?(SCHOOL_CONTACTS[normText(name)]||{}):{};
+  const info=field('Cidade/Estado',x.city||'—')+field('Responsável',x.responsible||'—')+field('E-mail',x.email||'—')+field('WhatsApp',x.whatsapp||contact.whatsapp||'—')+field('Instagram',x.instagram||contact.instagram||'—')+field('Número de inscrições',list.length);
+  const items=list.map(r=>{const f=formationDetails(r);return '<div class="presentation-row"><span><b>'+esc2(f.name)+'</b>'+esc2(f.formation)+'</span><span class="pcat">'+esc2(f.category)+'</span><span class="pmod">'+esc2(r.modality)+'</span><span class="pcor">'+esc2(r.choreo)+'</span><span class="pcrg">'+esc2(r.choreographer||'—')+'</span></div>'}).join('');
+  return '<details class="compact-card"><summary><span class="compact-title"><b>'+esc2(name)+'</b><small>'+countLabel(list.length,'inscrição','inscrições')+'</small></span></summary><div class="compact-body"><div class="school-info">'+info+'</div><div class="school-presentations"><h4>Inscrições</h4>'+items+'</div></div></details>';
+ }).join(''):emptyState('Nenhuma inscrição recebida para este evento.'))+'</div></div>';
+ root.querySelector('.prisma-page[data-view="participantes"]').innerHTML='<div class="module-wrap"><div class="module-head"><h2>Participantes</h2></div><div class="compact-list">'+(groups.length?groups.map(([name,list])=>{
+  const people=new Map();list.forEach(r=>r.people.forEach(p=>{const k=normText(p.name);if(!people.has(k))people.set(k,p)}));
+  const arr=[...people.values()].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  return '<details class="compact-card"><summary><span class="compact-title"><b>'+esc2(name)+'</b><small>'+countLabel(arr.length,'participante','participantes')+'</small></span></summary><div class="compact-body">'+arr.map(p=>{const age=ageFrom(p.detail);return '<div class="participant-person"><b>'+esc2(p.name)+'</b><span>'+esc2(age?age+' anos':'—')+'</span></div>'}).join('')+'</div></details>';
+ }).join(''):emptyState('Nenhum participante recebido para este evento.'))+'</div></div>';
+ const home=root.querySelector('.prisma-page[data-view="inicio"]');
+ const counts=[rows.length,new Set(rows.flatMap(r=>r.people.map(p=>normText(p.name)))).size,groups.length,new Set(rows.map(r=>normText(r.choreo))).size];
+ home.querySelectorAll('.home-stat strong').forEach((el,i)=>el.textContent=counts[i]);
+ home.querySelector('.home-columns .home-panel').innerHTML='<h3>Inscrições por escola</h3>'+(groups.length?groups.map(([name,list])=>'<details class="home-school"><summary><b>'+esc2(name)+'</b><small>'+countLabel(list.length,'inscrição','inscrições')+'</small></summary>'+list.map(r=>'<div class="home-school-item">'+esc2(r.choreo)+'<span>'+esc2(r.category)+' · '+esc2(r.modality)+'</span></div>').join('')+'</details>').join(''):'<div class="home-empty">Escolas e total de inscrições.</div>');
+ const paid=rows.filter(r=>r.payment==='Pago').length,pending=rows.filter(r=>r.payment==='Pendente').length,unknown=rows.filter(r=>!['Pago','Pendente'].includes(r.payment)).length;
+ const confirmed=rows.filter(r=>r.payment==='Pago'&&r.photo==='Sim'&&r.video==='Sim').length;
+ [paid,unknown?pending+' + '+unknown+' a conferir':pending,confirmed,rows.length-confirmed].forEach((v,i)=>home.querySelectorAll('.status-grid strong')[i].textContent=v);
+ home.querySelectorAll('.home-panel')[2].innerHTML='<h3>Precisa de atenção</h3><div class="home-empty">'+(rows.length-confirmed?countLabel(rows.length-confirmed,'inscrição precisa','inscrições precisam')+' de conferência de pagamento, foto ou vídeo.':'Nenhuma pendência registrada.')+'</div>';
+ const people=[...new Set(rows.flatMap(r=>r.people.map(p=>p.name)))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+ const choreos=[...new Set(rows.map(r=>r.choreo))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+ const selects=root.querySelectorAll('.prisma-page[data-view="destaques"] .highlight-fields select');
+ [people,choreos].forEach((list,i)=>selects[i].innerHTML='<option value="">Selecione</option>'+list.map(v=>'<option>'+esc2(v)+'</option>').join(''));
+}
+function renderTestData(){Object.keys(EVENT_CONFIG).forEach(renderEvent)}
+function simulateEnrollment(){
+ const val=id=>(document.getElementById(id)?.value||'').trim();
+ const item={id:Date.now(),event:val('tEvent'),type:val('tType'),school:val('tSchool'),responsible:val('tResponsible'),participant:val('tParticipant'),age:val('tAge'),choreo:val('tChoreo'),category:val('tCategory'),modality:val('tModality'),payment:val('tPayment'),photo:val('tPhoto'),video:val('tVideo')};
+ if(!item.school||!item.participant||!item.choreo||!item.category||!item.modality){alert('Preencha escola, participante, coreografia, categoria e modalidade.');return}
+ const rows=getTestEnrollments();rows.push(item);localStorage.setItem(TEST_KEY,JSON.stringify(rows));renderTestData();toggleTestPanel();alert('Inscrição de teste recebida.');
+}
+function clearTestData(){localStorage.removeItem(TEST_KEY);renderTestData()}
+document.addEventListener('DOMContentLoaded',()=>{
+ document.querySelectorAll('.prisma-nav-btn').forEach(b=>b.addEventListener('click',()=>setEventPage(b.dataset.event,b.dataset.view)));
+ document.querySelectorAll('.highlight-tabs').forEach(tabs=>tabs.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{tabs.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));tabs.closest('.module-wrap').querySelector('.highlight-head strong').textContent='Avaliação artística — '+b.textContent.trim()})));
+ document.querySelectorAll('.result-tabs').forEach(tabs=>tabs.querySelectorAll('.result-tab').forEach((old,i)=>{
+  const b=document.createElement('button');b.type='button';b.className='result-tab'+(i===0?' active':'');b.textContent=old.textContent;old.replaceWith(b);
+  b.addEventListener('click',()=>{tabs.querySelectorAll('.result-tab').forEach(x=>x.classList.toggle('active',x===b));tabs.closest('.module-wrap').querySelector('.result-board td').textContent='Ainda não há resultados gravados em '+b.textContent+'.'});
+ }));
+ renderTestData();
+});
+</script>
+<script id="approved-two-screens-behavior">
+(function(){
+ const originalSetEventPage=window.setEventPage;
+ window.setEventPage=function(event,view){
+  if(originalSetEventPage)originalSetEventPage(event,view);
+  const root=document.getElementById(EVENT_CONFIG[event]?.screen);
+  if(root&&event==='faf')root.classList.toggle('approved-home',view==='inicio');
+ };
+ const originalShowScreen=window.showScreen;
+ window.showScreen=function(id){if(originalShowScreen)originalShowScreen(id);if(id==='app')document.getElementById('app')?.classList.add('approved-home');};
+})();
+</script>
+<script id="prisma-navigation-repair">
+(function(){
+ const titles={escolas:'Escolas',categorias:'Categorias',modalidades:'Modalidades',configuracoes:'Configurações'};
+ for(const event of ['faf','faft']){
+  const root=document.getElementById(EVENT_CONFIG[event].screen);
+  for(const [view,title] of Object.entries(titles)){
+   const page=document.createElement('section');page.className='prisma-page';page.dataset.view=view;page.id=event+'-'+view;page.setAttribute('aria-label',title);root.querySelector('.prisma-work').appendChild(page);
+   const button=document.createElement('button');button.type='button';button.className='prisma-nav-btn';button.dataset.view=view;button.dataset.event=event;button.setAttribute('aria-current','false');
+   const paths={escolas:'<path d="M3 21V8l9-5 9 5v13M1 21h22M8 12h1M15 12h1M10 21v-5h4v5"/>',categorias:'<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',modalidades:'<path d="M12 3v18M3 12h18M5 5l14 14M5 19L19 5"/>',configuracoes:'<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>'};
+   button.innerHTML='<span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24">'+paths[view]+'</svg></span><span>'+title+'</span>';button.addEventListener('click',()=>setEventPage(event,view));if(!root.querySelector('.prisma-nav-btn[data-view="'+view+'"]'))root.querySelector('.prisma-nav').appendChild(button);
+  }
+ }
+ const original=window.setEventPage;
+ window.setEventPage=function(event,view){
+  if(titles[view]){
+   const page=document.getElementById(event+'-'+view);const rows=eventRecords(event);
+   const values=view==='escolas'?rows.map(r=>r.school):view==='categorias'?rows.map(r=>r.subcategory||r.category):rows.map(r=>r.modality);
+   const names=[...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+   const content=view==='configuracoes'?'<p>O acesso individual dos jurados e apoiadores ainda não foi configurado.</p><p>As inscrições de teste são armazenadas somente neste navegador.</p>':names.length?'<ul>'+names.map(n=>'<li>'+esc2(n)+'</li>').join('')+'</ul>':emptyState('Nenhum registro disponível para este evento.');
+   page.innerHTML='<div class="module-wrap"><div class="module-head"><h2>'+titles[view]+'</h2></div>'+content+'</div>';
+  }
+  original(event,view);
+ };
+})();
+</script>
+
+
+<script id="faft-access-bridge">
+(function(){
+  function prepareFaFtHome(){
+    const root=document.getElementById('faftPending');
+    if(root) root.classList.add('approved-home');
+  }
+
+  const oldShowFaFt = window.showFaFt;
+  if(typeof oldShowFaFt === 'function'){
+    window.showFaFt = function(){
+      prepareFaFtHome();
+      return oldShowFaFt.apply(this, arguments);
+    };
+  }
+
+  const oldSetEventPage = window.setEventPage;
+  if(typeof oldSetEventPage === 'function'){
+    window.setEventPage = function(event, view){
+      const root=document.getElementById('faftPending');
+      if(event === 'faft' && root){
+        root.classList.toggle('approved-home', view === 'inicio');
+      }
+      return oldSetEventPage.apply(this, arguments);
+    };
+  }
+})();
+</script>
+
+
+<script id="prisma-fluxo-direto-v2">
+(function(){
+  function abrirPainelFaF(){
+    if(typeof showScreen==='function') showScreen('app');
+    if(typeof setPage==='function') setPage('inicio');
+  }
+  window.prismaAbrirPainel=abrirPainelFaF;
+
+  /* Painel -> Login */
+  window.prismaPanelBack=function(){
+    if(typeof showScreen==='function') showScreen('login');
+  };
+
+  /* Internas -> Painel do evento atual */
+  window.prismaInternalBack=function(event){
+    if(event==='faft'){
+      if(typeof showScreen==='function') showScreen('faftPending');
+      if(typeof setEventPage==='function') setEventPage('faft','inicio');
+    }else{
+      if(typeof showScreen==='function') showScreen('app');
+      if(typeof setPage==='function') setPage('inicio');
+    }
+  };
+
+  /* Intercepta apenas a ida pós-login para a antiga seleção de evento. */
+  const oldShowScreen=window.showScreen;
+  if(typeof oldShowScreen==='function'){
+    window.showScreen=function(id){
+      if(id==='select') id='app';
+      return oldShowScreen(id);
+    };
+  }
+})();
+</script>
+
+
+
+<script id="prisma-painel-zerado">
+(function(){
+ function zerar(){
+   document.querySelectorAll('#app .pld-stats strong,#faftPending .pld-stats strong').forEach(el=>el.textContent='0');
+ }
+ document.addEventListener('DOMContentLoaded',zerar);
+ new MutationObserver(zerar).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
+})();
+</script>
+
+
+<script id="faf-zero-hard-guard">
+(function(){
+ function z(){
+   var dashboards=document.querySelectorAll('.prisma-live-dashboard');
+   var d=dashboards[0]; if(!d)return;
+   var labels=['Inscrições','Participantes','Escolas','Categorias','Modalidades'];
+   d.querySelectorAll('.pld-stat').forEach(function(card){
+     var t=card.textContent||'';
+     if(labels.some(function(x){return t.indexOf(x)>=0})){
+       var n=card.querySelector('strong'); if(n)n.textContent='0';
+     }
+   });
+ }
+ document.addEventListener('DOMContentLoaded',z);
+ window.addEventListener('load',z);
+ setTimeout(z,50);setTimeout(z,300);setTimeout(z,1000);
+})();
+</script>
+
+
+<script id="faft-contagens-reais-v3">
+(function(){
+ function texto(v){return String(v==null?'':v).trim()}
+ function distintos(lista){
+   return new Set(lista.map(texto).filter(Boolean).map(function(v){return v.toLocaleLowerCase('pt-BR')})).size;
+ }
+ function dadosFaFt(){
+   try{return typeof eventRecords==='function' ? (eventRecords('faft')||[]) : []}
+   catch(e){return []}
+ }
+ function contar(){
+   var rows=dadosFaFt();
+   var participantes=[];
+   rows.forEach(function(r){
+     if(Array.isArray(r.people)){
+       r.people.forEach(function(p){var n=texto(p&&p.name);if(n)participantes.push(n)});
+     }
+   });
+   return [
+     rows.length,
+     distintos(participantes),
+     distintos(rows.map(function(r){return r.school})),
+     distintos(rows.map(function(r){return r.subcategory||r.category})),
+     distintos(rows.map(function(r){return r.modality}))
+   ];
+ }
+ function atualizar(){
+   var root=document.getElementById('faftPending');
+   if(!root)return;
+   var dash=root.querySelector('.prisma-live-dashboard');
+   if(!dash)return;
+   var cards=Array.from(dash.querySelectorAll('.pld-stat'));
+   var vals=contar();
+   var nomes=['Inscrições','Participantes','Escolas','Categorias','Modalidades'];
+   nomes.forEach(function(nome,i){
+     var card=cards.find(function(c){return (c.textContent||'').indexOf(nome)>=0});
+     var n=card&&card.querySelector('strong');
+     if(n)n.textContent=String(vals[i]);
+   });
+ }
+ document.addEventListener('DOMContentLoaded',atualizar);
+ window.addEventListener('load',atualizar);
+ var oldRender=window.renderTestData;
+ if(typeof oldRender==='function'){
+   window.renderTestData=function(){var r=oldRender.apply(this,arguments);atualizar();return r};
+ }
+ var oldShow=window.showFaFt;
+ if(typeof oldShow==='function'){
+   window.showFaFt=function(){var r=oldShow.apply(this,arguments);setTimeout(atualizar,0);return r};
+ }
+ window.atualizarContagensFaFt=atualizar;
+})();
+</script>
+
+
+
+
+<script src="./config.js"></script><script src="./auth.js"></script></body>
+</html>
