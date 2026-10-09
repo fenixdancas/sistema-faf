@@ -1,19 +1,24 @@
-/* PRISMA mobile: uma unica arte, controles proporcionais */
+/* Login mobile independente da composicao desktop */
+.prisma-mobile-login{display:none}
 @media (max-width:760px) and (orientation:portrait){
-#login.on{height:100dvh!important;min-height:100dvh!important;overflow:hidden!important;background:#eef4ff!important}
-#login .login-art-frame{display:block!important;position:absolute!important;inset:0!important}
-#login .login-art-frame .approved-login-art{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
-#login .login-art-frame .prisma-art-edge{display:none!important}
-#login .approved-login-stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;display:block!important;padding:0!important;pointer-events:none!important}
-#login .approved-login-stage:before,#login .approved-login-stage:after{display:none!important;content:none!important}
-#login .approved-login-stage input,#login .prisma-reset,#login .approved-hot{position:absolute!important;pointer-events:auto!important;left:62.3%!important;width:27.8%!important;box-sizing:border-box!important}
-#login .approved-login-stage input{height:5.9%!important;margin:0!important;padding:0 5px!important;border:0!important;border-radius:6px!important;background:#f3f2ff!important;font:clamp(9px,2.8vw,14px) Georgia,serif!important}
-#login #prismaEmail{top:32.4%!important}#login #prismaPassword{top:40.4%!important}
-#login .approved-hot.enter{display:block!important;top:48.4%!important;height:5.9%!important;margin:0!important;border-radius:7px!important;background:linear-gradient(90deg,#315fa8,#7054b6 72%,#c783b4)!important;color:#fff!important;font:clamp(9px,2.8vw,14px) Georgia,serif!important}
-#login .prisma-reset{top:56.6%!important;height:4%!important;margin:0!important;padding:0!important;background:#f0f1ff!important;border-radius:6px!important;font:clamp(8px,2.4vw,12px) Georgia,serif!important}
-#login .approved-hot.jury,#login .approved-hot.support{display:block!important;height:7.2%!important;margin:0!important;border-radius:8px!important;background:rgba(249,249,255,.92)!important;border:1px solid rgba(92,78,154,.16)!important;color:#44356f!important;font:clamp(9px,2.8vw,14px) Georgia,serif!important}
-#login .approved-hot.jury{top:62%!important}#login .approved-hot.support{top:70%!important}
-#login #prismaLoginStatus{position:absolute!important;left:62.3%!important;top:79%!important;width:27.8%!important;margin:0!important;padding:5px!important;font:clamp(8px,2.2vw,11px)/1.25 Georgia,serif!important}
-#juryLogin .jury-login-shell{padding:18px!important;min-height:100dvh!important}#juryLogin .jury-login-card{width:100%!important;max-width:430px!important;padding:24px 20px!important}
-.role-event-shell{padding:18px!important}.role-event-card{width:100%!important;padding:24px 20px!important}.role-work-main{padding:22px 16px 42px!important}
+ #login.on{height:100dvh!important;min-height:100dvh!important;overflow:auto!important;background:#edf4ff!important}
+ #login>.login-art-frame,#login>.approved-login-stage{display:none!important}
+ #login .prisma-mobile-login{display:flex!important;position:relative;min-height:100dvh;width:100%;flex-direction:column;justify-content:space-between;padding:8vh 7vw 7vh;box-sizing:border-box;background:linear-gradient(180deg,rgba(238,246,255,.96),rgba(244,239,255,.93) 52%,rgba(238,246,255,.97));overflow:hidden}
+ #login .prisma-mobile-login:before{content:"";position:absolute;inset:0;background:url("./assets/fa44b501d5c7cbf31087e5cf.png") 23% center/cover no-repeat;opacity:.16;pointer-events:none}
+ .prisma-mobile-brand,.prisma-mobile-panel{position:relative;z-index:1}
+ .prisma-mobile-brand{display:flex;flex-direction:column;align-items:flex-start}
+ .prisma-mobile-brand strong{font:clamp(46px,15vw,72px)/.9 Georgia,serif;color:#17245e;letter-spacing:.01em;text-shadow:0 2px 10px rgba(255,255,255,.7)}
+ .prisma-mobile-brand span{margin:13px 0 0 3px;font:600 12px/1 Arial,sans-serif;letter-spacing:.19em;color:#27356e}
+ .prisma-mobile-panel{width:100%;display:flex;flex-direction:column;gap:11px;padding:22px 18px 18px;border-radius:20px;background:rgba(250,250,255,.84);border:1px solid rgba(91,83,155,.13);box-shadow:0 18px 50px rgba(59,69,128,.12);backdrop-filter:blur(4px)}
+ .prisma-mobile-panel input,.prisma-mobile-panel button{box-sizing:border-box;width:100%;height:52px;border-radius:12px;font:16px Georgia,serif}
+ .prisma-mobile-panel input{padding:0 15px;border:1px solid rgba(80,82,155,.18);background:rgba(255,255,255,.92);color:#26316d;outline:none}
+ .prisma-mobile-panel input:focus{border-color:#7463ad;box-shadow:0 0 0 2px rgba(116,99,173,.10)}
+ .prisma-mobile-panel button{border:1px solid rgba(88,76,151,.16);background:rgba(250,249,255,.92);color:#44356f;cursor:pointer}
+ .prisma-mobile-panel .mobile-enter{border:0;background:linear-gradient(100deg,#276ab5,#7951c8 68%,#c274b6);color:#fff}
+ .prisma-mobile-panel .mobile-reset{height:auto;min-height:38px;border:0;background:transparent;font-size:13px}
+ #prismaMobileStatus:empty{display:none}
+ #prismaMobileStatus{margin:2px 0 0;padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.8);color:#573a77;text-align:center;font:13px/1.35 Arial,sans-serif}
+ #juryLogin .jury-login-shell{padding:18px!important;min-height:100dvh!important}
+ #juryLogin .jury-login-card{width:100%!important;max-width:430px!important;padding:24px 20px!important}
+ .role-event-shell{padding:18px!important}.role-event-card{width:100%!important;padding:24px 20px!important}.role-work-main{padding:22px 16px 42px!important}
 }
