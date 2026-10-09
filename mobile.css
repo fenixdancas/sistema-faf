@@ -1,0 +1,69 @@
+/* PRISMA mobile login */
+@media (max-width: 760px) and (orientation: portrait){
+  #login.on{
+    overflow:auto!important;
+    min-height:100dvh!important;
+    height:100dvh!important;
+    background:
+      linear-gradient(rgba(244,248,255,.10),rgba(244,248,255,.10)),
+      url("./assets/fa44b501d5c7cbf31087e5cf.png") 35% center/cover no-repeat!important;
+  }
+  #login .login-art-frame{display:none!important}
+  #login .approved-login-stage{
+    position:relative!important;
+    left:auto!important;top:auto!important;transform:none!important;
+    width:100%!important;height:100dvh!important;
+    min-height:680px!important;
+    display:flex!important;flex-direction:column!important;
+    align-items:center!important;justify-content:flex-end!important;
+    padding:0 7vw 7vh!important;pointer-events:none;
+  }
+  #login .approved-login-stage:before{
+    content:"PRISMA"!important;
+    position:absolute;left:7vw;top:9vh;
+    color:#18255f;font:clamp(38px,13vw,62px) Georgia,serif;
+    letter-spacing:.02em;text-shadow:0 2px 12px rgba(255,255,255,.75);
+  }
+  #login .approved-login-stage:after{
+    content:"GESTÃO FaF e FaFt"!important;
+    position:absolute;left:8vw;top:calc(9vh + 68px);
+    color:#25346c;font:600 12px/1.2 Arial,sans-serif;letter-spacing:.18em;
+  }
+  #login .approved-login-stage input,
+  #login .prisma-reset,
+  #login .approved-hot{
+    position:relative!important;left:auto!important;top:auto!important;
+    width:min(100%,420px)!important;pointer-events:auto!important;
+  }
+  #login .approved-login-stage input{
+    height:52px!important;margin:0 0 10px!important;
+    padding:0 16px!important;border:1px solid rgba(90,91,160,.18)!important;
+    border-radius:13px!important;background:rgba(249,249,255,.94)!important;
+    font:17px Arial,sans-serif!important;box-shadow:0 8px 24px rgba(58,70,130,.08);
+  }
+  #login .approved-hot.enter{
+    display:block!important;height:52px!important;margin:2px 0 10px!important;
+    border-radius:13px!important;background:linear-gradient(90deg,#315fa8,#7054b6 72%,#c783b4)!important;
+    color:#fff!important;font:17px Arial,sans-serif!important;
+  }
+  #login .prisma-reset{
+    height:auto!important;margin:0 0 12px!important;padding:8px 4px!important;
+    background:rgba(247,247,255,.82)!important;border-radius:10px!important;
+    font:14px Arial,sans-serif!important;
+  }
+  #login .approved-hot.jury,#login .approved-hot.support{
+    display:inline-flex!important;align-items:center!important;justify-content:center!important;
+    height:48px!important;margin:4px 0!important;border-radius:13px!important;
+    background:rgba(249,249,255,.88)!important;border:1px solid rgba(92,78,154,.18)!important;
+    color:#44356f!important;font:16px Arial,sans-serif!important;
+  }
+  #prismaLoginStatus{
+    position:relative!important;left:auto!important;top:auto!important;
+    order:10;width:min(100%,420px)!important;margin:8px 0 0!important;
+    font:14px/1.35 Arial,sans-serif!important;
+  }
+  #juryLogin .jury-login-shell{padding:18px!important;min-height:100dvh!important}
+  #juryLogin .jury-login-card{width:100%!important;max-width:430px!important;padding:24px 20px!important}
+  .role-event-shell{padding:18px!important}.role-event-card{width:100%!important;padding:24px 20px!important}
+  .role-work-main{padding:22px 16px 42px!important}
+}
