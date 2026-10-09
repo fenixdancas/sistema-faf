@@ -1,3 +1,4 @@
+(function(){var l=document.createElement('link');l.rel='stylesheet';l.href='./mobile.css?v=20261009-1';document.head.appendChild(l);}());
 (function(){
  'use strict';
  const config=window.PRISMA_CONFIG||{}, key='prisma_auth_session_v1';
