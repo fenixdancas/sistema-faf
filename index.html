@@ -989,8 +989,8 @@ linear-gradient(35deg,transparent 0 18%,rgba(155,174,255,.14) 18.2% 19%,transpar
         <button onclick="setEventPage('faft','inscricoes')"><em>▤</em><span>Inscrições<strong>0</strong></span></button>
         <button onclick="setEventPage('faft','participantes')"><em>♙</em><span>Participantes<strong>0</strong></span></button>
         <button onclick="setEventPage('faft','escolas')"><em>▥</em><span>Escolas<strong>0</strong></span></button>
-        <button onclick="setEventPage('faft','categorias')"><em>☆</em><span>Categorias<strong>28</strong></span></button>
-        <button onclick="setEventPage('faft','modalidades')"><em>♢</em><span>Modalidades<strong>12</strong></span></button>
+        <button onclick="setEventPage('faft','categorias')"><em>☆</em><span>Categorias<strong data-live-metric="categorias">0</strong></span></button>
+        <button onclick="setEventPage('faft','modalidades')"><em>♢</em><span>Modalidades<strong data-live-metric="modalidades">0</strong></span></button>
       </section>
       <section class="pld-panel pld-timeline"><h2>Linha do Tempo</h2><div class="timeline"><span class="done">✓<small>Inscrições</small></span><span class="done">✓<small>Avaliação</small></span><span><small>Evento</small></span><span><small>Divulgação dos resultados</small></span></div></section>
       <section class="pld-panel pld-quick"><h2>Acesso Rápido</h2><div>
@@ -1163,6 +1163,10 @@ function renderEvent(event){
  const home=root.querySelector('.prisma-page[data-view="inicio"]');
  const counts=[rows.length,new Set(rows.flatMap(r=>r.people.map(p=>normText(p.name)))).size,groups.length,new Set(rows.map(r=>normText(r.choreo))).size];
  home.querySelectorAll('.home-stat strong').forEach((el,i)=>el.textContent=counts[i]);
+ const metricCats=new Set(rows.map(r=>normText(formationDetails(r).category)).filter(Boolean)).size;
+ const metricMods=new Set(rows.map(r=>normText(r.modality)).filter(Boolean)).size;
+ root.querySelectorAll('[data-live-metric="categorias"]').forEach(el=>el.textContent=metricCats);
+ root.querySelectorAll('[data-live-metric="modalidades"]').forEach(el=>el.textContent=metricMods);
  home.querySelector('.home-columns .home-panel').innerHTML='<h3>Inscrições por escola</h3>'+(groups.length?groups.map(([name,list])=>'<details class="home-school"><summary><b>'+esc2(name)+'</b><small>'+countLabel(list.length,'inscrição','inscrições')+'</small></summary>'+list.map(r=>'<div class="home-school-item">'+esc2(r.choreo)+'<span>'+esc2(r.category)+' · '+esc2(r.modality)+'</span></div>').join('')+'</details>').join(''):'<div class="home-empty">Escolas e total de inscrições.</div>');
  const paid=rows.filter(r=>r.payment==='Pago').length,pending=rows.filter(r=>r.payment==='Pendente').length,unknown=rows.filter(r=>!['Pago','Pendente'].includes(r.payment)).length;
  const confirmed=rows.filter(r=>r.payment==='Pago'&&r.photo==='Sim'&&r.video==='Sim').length;
