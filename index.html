@@ -1165,6 +1165,8 @@ function renderEvent(event){
  home.querySelectorAll('.home-stat strong').forEach((el,i)=>el.textContent=counts[i]);
  const metricCats=new Set(rows.map(r=>normText(formationDetails(r).category)).filter(Boolean)).size;
  const metricMods=new Set(rows.map(r=>normText(r.modality)).filter(Boolean)).size;
+ const dashboardCounts=[counts[0],counts[1],counts[2],metricCats,metricMods];
+ root.querySelectorAll('.pld-metrics strong').forEach((el,i)=>el.textContent=dashboardCounts[i]);
  root.querySelectorAll('[data-live-metric="categorias"]').forEach(el=>el.textContent=metricCats);
  root.querySelectorAll('[data-live-metric="modalidades"]').forEach(el=>el.textContent=metricMods);
  home.querySelector('.home-columns .home-panel').innerHTML='<h3>Inscrições por escola</h3>'+(groups.length?groups.map(([name,list])=>'<details class="home-school"><summary><b>'+esc2(name)+'</b><small>'+countLabel(list.length,'inscrição','inscrições')+'</small></summary>'+list.map(r=>'<div class="home-school-item">'+esc2(r.choreo)+'<span>'+esc2(r.category)+' · '+esc2(r.modality)+'</span></div>').join('')+'</details>').join(''):'<div class="home-empty">Escolas e total de inscrições.</div>');
