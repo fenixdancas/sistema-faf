@@ -7,7 +7,7 @@
  const rawShow=window.showScreen;
  const roles=['admin','jurada','apoiador'];
  const has=role=>!!profile?.roles?.includes(role);
- function status(message){const p=document.getElementById(selectedRole==='admin'?'prismaLoginStatus':'roleLoginStatus');if(p)p.textContent=message;}
+ function status(message){const p=document.getElementById(document.getElementById('juryLogin')?.classList.contains('on')?'roleLoginStatus':'prismaLoginStatus');if(p)p.textContent=message;}
  async function request(path,{method='GET',body,authenticated=true}={}){
   if(!ready)throw Error('A autenticação ainda precisa ser conectada ao projeto do PRISMA.');
   const response=await fetch(config.supabaseUrl+path,{method,headers:{apikey:config.publishableKey,'Content-Type':'application/json',...(authenticated&&session?{Authorization:'Bearer '+session.access_token}:{})},...(body?{body:JSON.stringify(body)}:{})});
@@ -59,7 +59,7 @@
  window.enterRole=()=>login(selectedRole);
  window.prismaLogout=async function(){try{if(session)await request('/auth/v1/logout',{method:'POST'});}finally{clear();rawShow('login');}};
  window.prismaPanelBack=window.prismaLogout;
- window.prismaRecover=async function(){const email=document.getElementById(selectedRole==='admin'?'prismaEmail':'juryEmail').value.trim();try{if(!email)throw Error('Preencha seu e-mail primeiro.');await request('/auth/v1/recover?redirect_to='+encodeURIComponent(location.origin+location.pathname),{method:'POST',authenticated:false,body:{email}});status('Se o e-mail estiver cadastrado, você receberá o link para definir sua senha.');}catch(e){status(e.message);}};
+ window.prismaRecover=async function(){const roleLogin=document.getElementById('juryLogin')?.classList.contains('on');const email=document.getElementById(roleLogin?'juryEmail':'prismaEmail').value.trim();try{if(!email)throw Error('Preencha seu e-mail primeiro.');await request('/auth/v1/recover?redirect_to='+encodeURIComponent(location.origin+location.pathname),{method:'POST',authenticated:false,body:{email}});status('Se o e-mail estiver cadastrado, você receberá o link para definir sua senha.');}catch(e){status(e.message);}};
  window.openRoleEvent=async function(event){
   if(!has(selectedRole)||!['faf','faft'].includes(event))return rawShow('login');
   selectedEvent=event;const id=selectedRole==='jurada'?'juryArea':'supporterArea';
