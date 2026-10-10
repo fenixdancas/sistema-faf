@@ -708,12 +708,6 @@ linear-gradient(35deg,transparent 0 18%,rgba(155,174,255,.14) 18.2% 19%,transpar
 #prismaLoginStatus{position:absolute;left:62.3%;top:81%;width:27.8%;margin:0;padding:6px;border-radius:8px;background:rgba(245,246,255,.92);text-align:center;font-size:clamp(9px,1vw,14px);color:#573a77;}
 .prisma-reset{position:absolute;left:62.3%;top:56.6%;width:27.8%;height:4%;border:0;background:#f0f1ff;color:#4e3c83;font-size:clamp(9px,1vw,14px);pointer-events:auto;cursor:pointer;}
 </style><link rel="stylesheet" href="./mobile.css?v=20261009-3">
-<style id="prisma-jury-photo-uniform">
-.juror-grid{align-items:stretch!important}
-.juror-card{height:190px!important;min-height:190px!important;overflow:hidden!important;border-radius:14px!important}
-.juror-card img{display:block!important;width:100%!important;height:190px!important;min-height:190px!important;aspect-ratio:auto!important;object-fit:cover!important;object-position:center 24%!important;border-radius:0!important;clip-path:none!important}
-.juror-card>span{display:none!important}
-</style>
 </head>
 <body><svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" style="position:absolute"><defs><image id="prisma-login-source" href="./assets/fa44b501d5c7cbf31087e5cf.png" width="1536" height="1024"/><image id="prisma-panel-source" href="./assets/b9e1c5deda995ad5a637836d.png" width="1536" height="1024"/></defs></svg>
 <section id="login" class="screen on" aria-label="Login">
@@ -1346,7 +1340,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <script id="prisma-painel-zerado">
 (function(){
  function zerar(){
-   document.querySelectorAll('#app .pld-stats strong,#faftPending .pld-stats strong').forEach(el=>el.textContent='0');
+   document.querySelectorAll('#app .pld-stats strong').forEach(el=>{if(el.textContent!=='0')el.textContent='0';});
  }
  document.addEventListener('DOMContentLoaded',zerar);
  new MutationObserver(zerar).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
