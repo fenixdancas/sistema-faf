@@ -12,7 +12,13 @@
   if(!ready)throw Error('A autenticação ainda precisa ser conectada ao projeto do PRISMA.');
   const response=await fetch(config.supabaseUrl+path,{method,headers:{apikey:config.publishableKey,'Content-Type':'application/json',...(authenticated&&session?{Authorization:'Bearer '+session.access_token}:{})},...(body?{body:JSON.stringify(body)}:{})});
   const value=await response.json().catch(()=>null);
-  if(!response.ok)throw Error(response.status===401||response.status===403?'E-mail, senha ou permissão inválidos.':'Não foi possível concluir. Tente novamente.');
+  if(!response.ok){
+   const code=value?.code||value?.error_code;
+   if(code==='invalid_credentials')throw Error('E-mail ou senha inválidos.');
+   if(code==='email_not_confirmed')throw Error('Confirme seu e-mail pelo link do convite antes de entrar.');
+   if(response.status===429)throw Error('O limite de tentativas ou envios foi atingido. Aguarde antes de tentar novamente.');
+   throw Error(response.status===401||response.status===403?'E-mail, senha ou permissão inválidos.':'Não foi possível concluir. Tente novamente.');
+  }
   return value;
  }
  function clear(){session=null;profile=null;assignments=[];clearTimeout(refreshTimer);sessionStorage.removeItem(key);window.prismaLoadEnrollments?.([]);document.querySelectorAll('input[type=password]').forEach(e=>e.value='');}
