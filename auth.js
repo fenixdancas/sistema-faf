@@ -66,23 +66,24 @@
  window.prismaLogout=async function(){try{if(session)await request('/auth/v1/logout',{method:'POST'});}finally{clear();rawShow('login');}};
  window.prismaPanelBack=window.prismaLogout;
  window.prismaRecover=async function(){const roleLogin=document.getElementById('juryLogin')?.classList.contains('on');const email=document.getElementById(roleLogin?'juryEmail':'prismaEmail').value.trim();try{if(!email)throw Error('Preencha seu e-mail primeiro.');await request('/auth/v1/recover?redirect_to='+encodeURIComponent(location.origin+location.pathname),{method:'POST',authenticated:false,body:{email}});status('Se o e-mail estiver cadastrado, você receberá o link para definir sua senha.');}catch(e){status(e.message);}};
- window.openRoleEvent=async function(event){
+ async function loadRoleEvent(event,preferredAssignment){
   if(!has(selectedRole)||!['faf','faft'].includes(event))return rawShow('login');
   selectedEvent=event;const id=selectedRole==='jurada'?'juryArea':'supporterArea';
-  try{assignments=await request('/rest/v1/rpc/prisma_my_assignments',{method:'POST',body:{p_event:event,p_kind:selectedRole}});renderAssignment(id);window.showScreen(id);}catch(e){status(e.message);}
- };
- function renderAssignment(id){
+  assignments=await request('/rest/v1/rpc/prisma_my_assignments',{method:'POST',body:{p_event:event,p_kind:selectedRole}});renderAssignment(id,preferredAssignment);window.showScreen(id);
+ }
+ window.openRoleEvent=async function(event){try{await loadRoleEvent(event);}catch(e){alert(e.message);}};
+ function renderAssignment(id,preferredAssignment){
   const root=document.getElementById(id),card=root.querySelector('.role-evaluation-card');
   root.querySelector('.jury-user-heading span').textContent=profile.name;
   document.getElementById(id==='juryArea'?'juryEventName':'supporterEventName').textContent=selectedEvent==='faf'?'FaF':'FaFt';
   let select=root.querySelector('.prisma-assignment-select');
   if(!select){select=document.createElement('select');select.className='prisma-assignment-select';select.setAttribute('aria-label','Apresentação');card.prepend(select);select.addEventListener('change',()=>fill(root));}
-  select.replaceChildren(...assignments.map(a=>{const option=document.createElement('option');option.value=a.id;option.textContent=a.title;return option;}));fill(root);
+  select.replaceChildren(...assignments.map(a=>{const option=document.createElement('option');option.value=a.id;option.textContent=a.title;return option;}));if(assignments.some(a=>a.id===preferredAssignment))select.value=preferredAssignment;fill(root);
   const counts=root.querySelectorAll('.jury-progress span');counts[0].textContent=assignments.filter(a=>!a.scores).length;counts[1].textContent=assignments.filter(a=>a.scores).length;
   const button=root.querySelector('.save-evaluation');button.disabled=!assignments.length;button.title='';button.onclick=()=>save(root);
  }
  function fill(root){const a=assignments.find(a=>a.id===root.querySelector('select').value);root.querySelector('.role-presentation span').textContent=a?a.title:'Nenhuma apresentação atribuída a você neste evento.';root.querySelectorAll('input[type=number]').forEach((el,i)=>el.value=a?.scores?.[i]??'');root.querySelector('textarea').value=a?.comments||'';}
- async function save(root){const a=assignments.find(a=>a.id===root.querySelector('select').value);if(!a)return;const input=[...root.querySelectorAll('input[type=number]')];const scores=input.map(x=>x.value===''?NaN:Number(x.value));const button=root.querySelector('.save-evaluation');if(scores.some(v=>!Number.isFinite(v)||v<5||v>10))return alert('Preencha todas as notas de 5 a 10.');button.disabled=true;try{await request('/rest/v1/rpc/prisma_save_evaluation',{method:'POST',body:{p_assignment:a.id,p_scores:scores,p_comments:root.querySelector('textarea').value}});await window.openRoleEvent(selectedEvent);alert('Avaliação salva.');}catch(e){alert(e.message);}finally{button.disabled=false;}}
+ async function save(root){const a=assignments.find(a=>a.id===root.querySelector('select').value);if(!a)return;const input=[...root.querySelectorAll('input[type=number]')];const scores=input.map(x=>x.value===''?NaN:Number(x.value));const button=root.querySelector('.save-evaluation');if(scores.some(v=>!Number.isFinite(v)||v<5||v>10))return alert('Preencha todas as notas de 5 a 10.');button.disabled=true;try{await request('/rest/v1/rpc/prisma_save_evaluation',{method:'POST',body:{p_assignment:a.id,p_scores:scores,p_comments:root.querySelector('textarea').value}});try{await loadRoleEvent(selectedEvent,a.id);}catch{alert('Avaliação salva, mas não foi possível recarregar a lista. Reabra o evento para atualizar as notas e os contadores.');return;}alert('Avaliação salva.');}catch(e){alert(e.message);}finally{button.disabled=false;}}
  document.querySelectorAll('#roleEventSelect button,#juryArea .role-top-actions button,#supporterArea .role-top-actions button').forEach(button=>{if(button.textContent.trim()==='Sair')button.onclick=window.prismaLogout;});
  document.querySelectorAll('.prisma-exit').forEach(button=>button.onclick=window.prismaLogout);
  document.querySelectorAll('.jury-back').forEach(button=>button.onclick=()=>rawShow('login'));
