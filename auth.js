@@ -3,7 +3,7 @@
  'use strict';
  const config=window.PRISMA_CONFIG||{}, key='prisma_auth_session_v1';
  const ready=/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.supabaseUrl||'')&&!!config.publishableKey;
- let session=null,profile=null,selectedRole='admin',selectedEvent='faf',assignments=[],refreshTimer;
+ let session=null,profile=null,selectedRole='admin',selectedEvent='faf',assignments=[],refreshTimer,loginPending=false;
  const rawShow=window.showScreen;
  const roles=['admin','jurada','apoiador'];
  const has=role=>!!profile?.roles?.includes(role);
@@ -30,6 +30,7 @@
    const rows=await request('/rest/v1/prisma_profiles?id=eq.'+encodeURIComponent(user.id)+'&select=id,name,roles');
    profile=rows[0];if(!profile||!Array.isArray(profile.roles)||!profile.roles.every(r=>roles.includes(r))||(expectedRole&&!has(expectedRole)))throw Error('Este usuário não tem acesso a esta área.');
    sessionStorage.setItem(key,JSON.stringify(tokens));
+   clearTimeout(refreshTimer);
    refreshTimer=setTimeout(refresh,Math.max(1000,((tokens.expires_in||3600)-60)*1000));
    return profile;
   }catch(e){clear();throw e;}
@@ -65,6 +66,7 @@
   }catch{lines.forEach(line=>line.querySelectorAll('strong').forEach(el=>el.textContent='Consulta indisponível'));}
  }
  async function login(role){
+  if(loginPending)return;loginPending=true;
   selectedRole=role;status('Entrando…');
   const email=document.getElementById(role==='admin'?'prismaEmail':'juryEmail').value.trim();
   const passwordInput=document.getElementById(role==='admin'?'prismaPassword':'juryPassword');
@@ -73,7 +75,7 @@
    const tokens=await request('/auth/v1/token?grant_type=password',{method:'POST',authenticated:false,body:{email,password:passwordInput.value}});
    await establish(tokens,role);status('');
    if(role==='admin')await adminHome();else{document.getElementById('roleIdentity').textContent=profile.name;window.showScreen('roleEventSelect');}
-  }catch(e){clear();status(e.message);rawShow(role==='admin'?'login':'juryLogin');}finally{passwordInput.value='';}
+  }catch(e){clear();status(e.message);rawShow(role==='admin'?'login':'juryLogin');}finally{passwordInput.value='';loginPending=false;}
  }
  window.enterFaF=()=>has('admin')?adminHome():login('admin');
  window.prismaAbrirPainel=window.enterFaF;
