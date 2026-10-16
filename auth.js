@@ -17,7 +17,8 @@
    if(code==='invalid_credentials')throw Error('E-mail ou senha inválidos.');
    if(code==='email_not_confirmed')throw Error('Confirme seu e-mail pelo link do convite antes de entrar.');
    if(response.status===429)throw Error('O limite de tentativas ou envios foi atingido. Aguarde antes de tentar novamente.');
-   throw Error(response.status===401||response.status===403?'E-mail, senha ou permissão inválidos.':'Não foi possível concluir. Tente novamente.');
+   const step=path.startsWith('/auth/v1/token')?'autenticação':path.startsWith('/auth/v1/user')?'sessão':path.startsWith('/rest/v1/prisma_profiles')?'perfil':'consulta';
+   throw Error(response.status===401||response.status===403?'E-mail, senha ou permissão inválidos.':'Não foi possível concluir a '+step+' (HTTP '+response.status+(typeof code==='string'&&/^[a-zA-Z0-9_]+$/.test(code)?', '+code:'')+').');
   }
   return value;
  }
@@ -62,6 +63,15 @@
  window.enterFaF=()=>has('admin')?adminHome():login('admin');
  window.prismaAbrirPainel=window.enterFaF;
  window.openRoleLogin=function(role){selectedRole=role==='supporter'?'apoiador':'jurada';document.getElementById('roleLoginTitle').textContent=selectedRole==='jurada'?'Acesso do Júri':'Acesso dos Apoiadores';document.getElementById('roleLoginStatus').textContent='';rawShow('juryLogin');};
+ const jurorIds={'Tati Neri':'6c38d335-ca10-4d17-ad13-9c24889c090f','Cassiano Rodrigues':'2548b434-3125-43d1-af85-c5b0d9ae34aa','Manu Marques':'aca75f23-482b-48dc-9e17-9d5a22aaa826','Magda El Nil':'fedf41f5-a997-45bf-a7b1-5dcee918dd37','Nahid Phoenix':'40dbbe8d-6b17-4fef-98dc-937d009ec080',"Rawnie El Lamya'":'4bb445c5-9ea4-47f5-bdae-e2b8c14b31cf'};
+ document.querySelectorAll('.juror-card').forEach(card=>card.addEventListener('click',async()=>{
+  const owner=jurorIds[card.getAttribute('aria-label')];
+  if(!profile||!has('jurada'))return window.openRoleLogin('jury');
+  if(profile.id!==owner)return alert('Entre com a conta desta jurada ou deste jurado para acessar suas avaliações.');
+  selectedRole='jurada';
+  const event=card.closest('#faftPending')?'faft':'faf';
+  try{await loadRoleEvent(event);}catch(e){alert(e.message);}
+ }));
  window.enterRole=()=>login(selectedRole);
  window.prismaLogout=async function(){try{if(session)await request('/auth/v1/logout',{method:'POST'});}finally{clear();rawShow('login');}};
  window.prismaPanelBack=window.prismaLogout;
