@@ -2,7 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
-function setup(role,event='faft'){
+function setup(role,event='faft',userId='test-user'){
  const dom=new JSDOM(fs.readFileSync('index.html','utf8'),{url:'https://example.test/prisma/',runScripts:'outside-only'});
  const w=dom.window, calls=[], alerts=[], saved=new Map(); let failReload=false;
  w.PRISMA_CONFIG={supabaseUrl:'https://example.supabase.co',publishableKey:'test-public'};
@@ -12,8 +12,8 @@ function setup(role,event='faft'){
   const body=options.body?JSON.parse(options.body):{};calls.push({path,body});
   let value;
   if(path.includes('/token'))value={access_token:'synthetic',refresh_token:'synthetic',expires_in:3600};
-  else if(path.endsWith('/auth/v1/user'))value={id:'test-user'};
-  else if(path.includes('/prisma_profiles?'))value=[{id:'test-user',name:'Teste',roles:[role]}];
+  else if(path.endsWith('/auth/v1/user'))value={id:userId};
+  else if(path.includes('/prisma_profiles?'))value=[{id:userId,name:'Teste',roles:[role]}];
   else if(path.endsWith('/prisma_save_evaluation')){saved.set(body.p_assignment,{scores:body.p_scores,comments:body.p_comments});value=null;}
   else if(path.endsWith('/prisma_my_assignments')){
    if(failReload)return {ok:false,status:503,json:async()=>({})};
@@ -47,4 +47,14 @@ for(const role of ['jurada','apoiador'])for(const event of ['faf','faft'])test(r
 });
 test('a reload failure after saving remains visible and is not reported as full success',async()=>{
  const t=setup('jurada');try{await t.login();const root=t.w.document.getElementById('juryArea');root.querySelectorAll('input').forEach(el=>el.value='8');t.failReload();await root.querySelector('.save-evaluation').onclick();assert.equal(t.saved.size,1);assert.ok(t.alerts.some(s=>s.includes('recarregar')));assert.ok(!t.alerts.includes('Avaliação salva.'));}finally{t.close()}
+});
+
+for(const event of ['faf','faft'])test('own juror photo opens '+event+' and another juror stays protected',async()=>{
+ const t=setup('jurada',event,'40dbbe8d-6b17-4fef-98dc-937d009ec080');
+ try{await t.login();const w=t.w;const parent=w.document.getElementById(event==='faft'?'faftPending':'app');
+ parent.querySelector('[aria-label="Nahid Phoenix"]').click();await new Promise(resolve=>setTimeout(resolve,0));
+ assert.equal(w.document.getElementById('juryEventName').textContent,event==='faft'?'FaFt':'FaF');
+ assert.equal(w.document.getElementById('juryArea').classList.contains('on'),true);
+ const before=t.calls.length;parent.querySelector('[aria-label="Tati Neri"]').click();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(t.calls.length,before);assert.ok(t.alerts.some(x=>x.includes('conta desta')));
+ }finally{t.close()}
 });
