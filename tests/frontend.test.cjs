@@ -58,3 +58,7 @@ for(const event of ['faf','faft'])test('own juror photo opens '+event+' and anot
  const before=t.calls.length;parent.querySelector('[aria-label="Tati Neri"]').click();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(t.calls.length,before);assert.ok(t.alerts.some(x=>x.includes('conta desta')));
  }finally{t.close()}
 });
+
+test('concurrent login submits only one authentication request',async()=>{
+ const t=setup('jurada');try{const w=t.w;w.openRoleLogin('jury');w.document.getElementById('juryEmail').value='test@example.test';w.document.getElementById('juryPassword').value='synthetic-test-only';await Promise.all([w.enterRole(),w.enterRole()]);assert.equal(t.calls.filter(c=>c.path.includes('/token?grant_type=password')).length,1);assert.equal(w.document.getElementById('roleEventSelect').classList.contains('on'),true);}finally{t.close()}
+});
