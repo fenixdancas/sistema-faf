@@ -48,6 +48,21 @@
   const rows=await request('/rest/v1/prisma_enrollments?event=eq.faft&select=payload&order=created_at.asc');
   window.prismaLoadEnrollments?.(rows.map(r=>r.payload));
   window.showScreen('app');window.setPage('inicio');
+  refreshAdminProgress();
+ }
+ async function refreshAdminProgress(){
+  const lines=[...document.querySelectorAll('.admin-progress-line')];
+  try{
+   const [people,entries,assigned,evaluations]=await Promise.all([
+    request('/rest/v1/prisma_profiles?select=id,roles'),
+    request('/rest/v1/prisma_enrollments?select=id,event'),
+    request('/rest/v1/prisma_assignments?select=id,enrollment_id,kind'),
+    request('/rest/v1/prisma_evaluations?select=assignment_id')
+   ]);
+   const jurors=people.filter(p=>p.roles.includes('jurada')).length;
+   const saved=new Set(evaluations.map(e=>e.assignment_id));
+   lines.forEach(line=>{const event=line.closest('#faftPending')?'faft':'faf';const ids=new Set(entries.filter(e=>e.event===event).map(e=>e.id));const values=line.querySelectorAll('strong');values[0].textContent=jurors+' cadastrados';values[1].textContent=assigned.filter(a=>a.kind==='jurada'&&ids.has(a.enrollment_id)&&saved.has(a.id)).length;});
+  }catch{lines.forEach(line=>line.querySelectorAll('strong').forEach(el=>el.textContent='Consulta indisponível'));}
  }
  async function login(role){
   selectedRole=role;status('Entrando…');
