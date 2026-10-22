@@ -7,7 +7,7 @@
  const rawShow=window.showScreen;
  const roles=['admin','jurada','apoiador'];
  const has=role=>!!profile?.roles?.includes(role);
- function status(message){const p=document.getElementById(document.getElementById('juryLogin')?.classList.contains('on')?'roleLoginStatus':'prismaLoginStatus');if(p)p.textContent=message;}
+ function status(message){const roleLogin=document.getElementById('juryLogin')?.classList.contains('on');const p=document.getElementById(roleLogin?'roleLoginStatus':'prismaLoginStatus');if(p)p.textContent=message;if(!roleLogin){const mobile=document.getElementById('prismaMobileStatus');if(mobile)mobile.textContent=message;}}
  async function request(path,{method='GET',body,authenticated=true}={}){
   if(!ready)throw Error('A autenticação ainda precisa ser conectada ao projeto do PRISMA.');
   const response=await fetch(config.supabaseUrl+path,{method,headers:{apikey:config.publishableKey,'Content-Type':'application/json',...(authenticated&&session?{Authorization:'Bearer '+session.access_token}:{})},...(body?{body:JSON.stringify(body)}:{})});

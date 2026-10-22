@@ -77,3 +77,7 @@ test('expired invitation shows recovery guidance and removes URL error',()=>{
 test('expired cached session refreshes before requesting protected data',async()=>{
  const t=setup('apoiador','faft','test-user',{beforeInit:w=>w.sessionStorage.setItem('prisma_auth_session_v1',JSON.stringify({access_token:'expired-test',refresh_token:'synthetic-test',expires_at:1}))});try{await new Promise(resolve=>setTimeout(resolve,0));assert.ok(t.calls[0].path.includes('grant_type=refresh_token'));assert.equal(t.w.document.getElementById('roleEventSelect').classList.contains('on'),true);}finally{t.close()}
 });
+
+test('mobile receives the final asynchronous login failure',async()=>{
+ const t=setup('admin');try{let complete;t.w.fetch=()=>new Promise(resolve=>{complete=resolve});t.w.document.getElementById('prismaEmail').value='test@example.test';t.w.document.getElementById('prismaPassword').value='synthetic-test-only';const pending=t.w.enterFaF();assert.equal(t.w.document.getElementById('prismaMobileStatus').textContent,'Entrando…');complete({ok:false,status:400,json:async()=>({code:'invalid_credentials'})});await pending;assert.equal(t.w.document.getElementById('prismaMobileStatus').textContent,'E-mail ou senha inválidos.');}finally{t.close()}
+});
