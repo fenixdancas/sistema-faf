@@ -2,7 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
-function setup(role,event='faft',userId='test-user'){
+function setup(role,event='faft',userId='test-user',options={}){
  const dom=new JSDOM(fs.readFileSync('index.html','utf8'),{url:'https://example.test/prisma/',runScripts:'outside-only'});
  const w=dom.window, calls=[], alerts=[], saved=new Map(); let failReload=false;
  w.PRISMA_CONFIG={supabaseUrl:'https://example.supabase.co',publishableKey:'test-public'};
@@ -21,6 +21,7 @@ function setup(role,event='faft',userId='test-user'){
   }else value=[];
   return {ok:true,json:async()=>value};
  };
+ if(options.beforeInit)options.beforeInit(w,calls);
  w.eval(fs.readFileSync('auth.js','utf8'));
  const login=async()=>{
   w.openRoleLogin(role==='apoiador'?'supporter':'jury');
@@ -61,4 +62,18 @@ for(const event of ['faf','faft'])test('own juror photo opens '+event+' and anot
 
 test('concurrent login submits only one authentication request',async()=>{
  const t=setup('jurada');try{const w=t.w;w.openRoleLogin('jury');w.document.getElementById('juryEmail').value='test@example.test';w.document.getElementById('juryPassword').value='synthetic-test-only';await Promise.all([w.enterRole(),w.enterRole()]);assert.equal(t.calls.filter(c=>c.path.includes('/token?grant_type=password')).length,1);assert.equal(w.document.getElementById('roleEventSelect').classList.contains('on'),true);}finally{t.close()}
+});
+
+for(const [value,message] of [
+ [{error:'invalid_grant',error_description:'Invalid login credentials'},'E-mail ou senha inválidos.'],
+ [{msg:'email rate limit exceeded'},'O limite de envio de e-mails foi atingido.'],
+ [{code:'email_not_confirmed'},'Confirme seu e-mail']
+])test('authentication response explains '+message,async()=>{
+ const t=setup('jurada');try{t.w.fetch=async()=>({ok:false,status:400,json:async()=>value});t.w.openRoleLogin('jury');t.w.document.getElementById('juryEmail').value='test@example.test';t.w.document.getElementById('juryPassword').value='synthetic-test-only';await t.w.enterRole();assert.ok(t.w.document.getElementById('roleLoginStatus').textContent.startsWith(message));}finally{t.close()}
+});
+test('expired invitation shows recovery guidance and removes URL error',()=>{
+ const t=setup('jurada','faft','test-user',{beforeInit:w=>{w.location.hash='error=access_denied&error_code=otp_expired';}});try{assert.equal(t.w.location.hash,'');assert.ok(t.w.document.getElementById('prismaLoginStatus').textContent.includes('expirou'));assert.equal(t.calls.length,0);}finally{t.close()}
+});
+test('expired cached session refreshes before requesting protected data',async()=>{
+ const t=setup('apoiador','faft','test-user',{beforeInit:w=>w.sessionStorage.setItem('prisma_auth_session_v1',JSON.stringify({access_token:'expired-test',refresh_token:'synthetic-test',expires_at:1}))});try{await new Promise(resolve=>setTimeout(resolve,0));assert.ok(t.calls[0].path.includes('grant_type=refresh_token'));assert.equal(t.w.document.getElementById('roleEventSelect').classList.contains('on'),true);}finally{t.close()}
 });
