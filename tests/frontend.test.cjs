@@ -81,3 +81,18 @@ test('expired cached session refreshes before requesting protected data',async()
 test('mobile receives the final asynchronous login failure',async()=>{
  const t=setup('admin');try{let complete;t.w.fetch=()=>new Promise(resolve=>{complete=resolve});t.w.document.getElementById('prismaEmail').value='test@example.test';t.w.document.getElementById('prismaPassword').value='synthetic-test-only';const pending=t.w.enterFaF();assert.equal(t.w.document.getElementById('prismaMobileStatus').textContent,'Entrando…');complete({ok:false,status:400,json:async()=>({code:'invalid_credentials'})});await pending;assert.equal(t.w.document.getElementById('prismaMobileStatus').textContent,'E-mail ou senha inválidos.');}finally{t.close()}
 });
+
+test('administration reads saved scores and comments, separates events, refreshes and clears on logout',async()=>{
+ let rows=[{assignment_id:'assigned-1',scores:Array(11).fill(5),comments:'<img src=x onerror=alert(1)> comentário salvo'}];
+ const t=setup('admin','faft','admin-test',{beforeInit:w=>{
+  const original=w.fetch;w.fetch=async(path,options)=>{
+   const data=path.includes('/prisma_profiles?select=')?[{id:'juror-test',name:'Jurada de teste',roles:['jurada']}]:path.includes('/prisma_enrollments?select=')?[{id:'entry-1',event:'faft',payload:{choreo:'Cinema Mudo'}}]:path.includes('/prisma_assignments?select=')?[{id:'assigned-1',enrollment_id:'entry-1',user_id:'juror-test',kind:'jurada'}]:path.includes('/prisma_evaluations?select=')?rows:null;
+   return data?{ok:true,json:async()=>data}:original(path,options);
+  };
+ }});
+ try{const w=t.w;w.document.getElementById('prismaEmail').value='test@example.test';w.document.getElementById('prismaPassword').value='synthetic-test-only';await w.enterFaF();await new Promise(r=>setTimeout(r,0));
+  const jury=w.document.querySelector('#faft-juri .prisma-admin-evaluations');assert.ok(jury.textContent.includes('Cinema Mudo'));assert.ok(jury.textContent.includes('Jurada de teste'));assert.equal(jury.querySelectorAll('.score-line').length,11);assert.ok(jury.textContent.includes(rows[0].comments));assert.equal(jury.querySelector('img'),null);assert.ok(w.document.querySelector('#faf-juri .prisma-admin-evaluations').textContent.includes('Nenhuma avaliação'));assert.equal(w.document.querySelector('#faft-juri .admin-progress-line strong:last-child').textContent,'1');
+  assert.ok(w.document.querySelector('#faft-resultados .prisma-admin-evaluations').textContent.includes('comentário salvo'));
+  rows=[];w.setEventPage('faft','juri');await new Promise(r=>setTimeout(r,0));assert.ok(jury.textContent.includes('Nenhuma avaliação'));await w.prismaLogout();assert.equal(w.document.querySelectorAll('.prisma-admin-evaluations').length,0);
+ }finally{t.close()}
+});

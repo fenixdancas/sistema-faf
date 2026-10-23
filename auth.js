@@ -3,7 +3,7 @@
  'use strict';
  const config=window.PRISMA_CONFIG||{}, key='prisma_auth_session_v1';
  const ready=/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.supabaseUrl||'')&&!!config.publishableKey;
- let session=null,profile=null,selectedRole='admin',selectedEvent='faf',assignments=[],refreshTimer,loginPending=false;
+ let session=null,profile=null,selectedRole='admin',selectedEvent='faf',assignments=[],refreshTimer,loginPending=false,adminRefresh=null,adminGeneration=0;
  const rawShow=window.showScreen;
  const roles=['admin','jurada','apoiador'];
  const has=role=>!!profile?.roles?.includes(role);
@@ -27,7 +27,7 @@
   }
   return value;
  }
- function clear(){session=null;profile=null;assignments=[];clearTimeout(refreshTimer);sessionStorage.removeItem(key);window.prismaLoadEnrollments?.([]);document.querySelectorAll('input[type=password]').forEach(e=>e.value='');}
+ function clear(){adminGeneration++;adminRefresh=null;document.querySelectorAll('.prisma-admin-evaluations').forEach(el=>el.remove());session=null;profile=null;assignments=[];clearTimeout(refreshTimer);sessionStorage.removeItem(key);window.prismaLoadEnrollments?.([]);document.querySelectorAll('input[type=password]').forEach(e=>e.value='');}
  async function establish(tokens,expectedRole){
   session=tokens;
   try{
@@ -57,19 +57,61 @@
   refreshAdminProgress();
  }
  async function refreshAdminProgress(){
+  if(!has('admin'))return;
+  if(adminRefresh)return adminRefresh;
+  const generation=adminGeneration;
+  adminRefresh=readAdminEvaluations(generation).finally(()=>{if(generation===adminGeneration)adminRefresh=null;});
+  return adminRefresh;
+ }
+ async function readAdminEvaluations(generation){
   const lines=[...document.querySelectorAll('.admin-progress-line')];
   try{
    const [people,entries,assigned,evaluations]=await Promise.all([
-    request('/rest/v1/prisma_profiles?select=id,roles'),
-    request('/rest/v1/prisma_enrollments?select=id,event'),
-    request('/rest/v1/prisma_assignments?select=id,enrollment_id,kind'),
-    request('/rest/v1/prisma_evaluations?select=assignment_id')
+    request('/rest/v1/prisma_profiles?select=id,name,roles'),
+    request('/rest/v1/prisma_enrollments?select=id,event,payload'),
+    request('/rest/v1/prisma_assignments?select=id,enrollment_id,user_id,kind'),
+    request('/rest/v1/prisma_evaluations?select=assignment_id,scores,comments,updated_at')
    ]);
+   if(generation!==adminGeneration||!has('admin'))return;
+   renderAdminEvaluations(people,entries,assigned,evaluations);
    const jurors=people.filter(p=>p.roles.includes('jurada')).length;
    const saved=new Set(evaluations.map(e=>e.assignment_id));
    lines.forEach(line=>{const event=line.closest('#faftPending')?'faft':'faf';const ids=new Set(entries.filter(e=>e.event===event).map(e=>e.id));const values=line.querySelectorAll('strong');values[0].textContent=jurors+' cadastrados';values[1].textContent=assigned.filter(a=>a.kind==='jurada'&&ids.has(a.enrollment_id)&&saved.has(a.id)).length;});
-  }catch{lines.forEach(line=>line.querySelectorAll('strong').forEach(el=>el.textContent='Consulta indisponível'));}
+  }catch{if(generation!==adminGeneration||!has('admin'))return;lines.forEach(line=>line.querySelectorAll('strong').forEach(el=>el.textContent='Consulta indisponível'));document.querySelectorAll('.prisma-admin-evaluations').forEach(el=>{el.textContent='Não foi possível consultar as avaliações. Reabra esta área para tentar novamente.';});}
  }
+ const juryCriteria=['Execução dos movimentos','Leitura musical','Conhecimento rítmico','Deslocamentos','Expressão facial','Expressão corporal','Interpretação artística','Sincronia','Evolução','Criatividade','Adequação do figurino'];
+ function renderAdminEvaluations(people,entries,assigned,evaluations){
+  const byPerson=new Map(people.map(p=>[p.id,p])),byEntry=new Map(entries.map(e=>[e.id,e])),byAssignment=new Map(assigned.map(a=>[a.id,a]));
+  const records=evaluations.map(v=>{const a=byAssignment.get(v.assignment_id);return {v,a,e:byEntry.get(a?.enrollment_id),p:byPerson.get(a?.user_id)};}).filter(r=>r.a&&r.e);
+  function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;}
+  for(const event of ['faf','faft'])for(const view of ['juri','destaques','resultados']){
+   const page=document.getElementById(event+'-'+view);if(!page)continue;
+   let panel=page.querySelector('.prisma-admin-evaluations');
+   if(!panel){panel=node('section',undefined,'prisma-admin-evaluations compact-list');panel.setAttribute('aria-label','Avaliações gravadas');(page.querySelector('.jury-workspace')||page.querySelector('.module-wrap')||page).append(panel);}
+   const kind=view==='destaques'?'apoiador':'jurada';
+   const rows=records.filter(r=>r.e.event===event&&(view==='resultados'||r.a.kind===kind));
+   panel.replaceChildren(node('h3','Avaliações gravadas — '+rows.length));
+   if(!rows.length)panel.append(node('p','Nenhuma avaliação gravada neste evento.'));
+   for(const {v,a,e,p} of rows){
+    const detail=node('details',undefined,'compact-card');
+    detail.append(node('summary',(e.payload?.choreo||'Apresentação')+' · '+(p?.name||'Avaliador')+' · '+(a.kind==='jurada'?'Júri':'Apoio')));
+    const body=node('div',undefined,'compact-body');
+    const criteria=a.kind==='jurada'?juryCriteria:['Nota artística do participante','Nota artística da coreografia'];
+    (v.scores||[]).forEach((score,i)=>{const line=node('div',undefined,'score-line');line.append(node('span',criteria[i]||'Nota '+(i+1)),node('strong',String(score)));body.append(line);});
+    body.append(node('h4','Observações e sugestões'),node('p',v.comments||'Sem comentário.'));detail.append(body);panel.append(detail);
+   }
+   if(view==='juri'){page.querySelector('.jury-workspace > .jury-sheet')?.setAttribute('hidden','');page.querySelector('.jury-workspace > .group-card')?.setAttribute('hidden','');}
+   if(view==='destaques'){const label=page.querySelector('.highlight-progress');if(label)label.textContent=rows.length+' avaliações gravadas';const empty=page.querySelector('.highlight-empty');if(empty)empty.textContent=rows.length?'Consulte as notas e os comentários abaixo.':'Aguardando avaliações dos apoiadores.';}
+   if(view==='resultados'){const table=page.querySelector('.result-board');if(table)table.hidden=true;const tabs=page.querySelector('.result-tabs');if(tabs)tabs.hidden=true;panel.prepend(node('p','Conferência das notas e comentários recebidos. A classificação final ainda não foi apurada.'));}
+  }
+ }
+ const originalSetEventPage=window.setEventPage;
+ window.setEventPage=function(event,view){
+  if(!has('admin'))return;
+  const result=originalSetEventPage?.(event,view);
+  if(['juri','destaques','resultados'].includes(view))refreshAdminProgress();
+  return result;
+ };
  async function login(role){
   if(loginPending)return;loginPending=true;
   selectedRole=role;status('Entrando…');
