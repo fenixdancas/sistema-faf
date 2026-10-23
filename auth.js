@@ -100,9 +100,9 @@
     (v.scores||[]).forEach((score,i)=>{const line=node('div',undefined,'score-line');line.append(node('span',criteria[i]||'Nota '+(i+1)),node('strong',String(score)));body.append(line);});
     body.append(node('h4','Observações e sugestões'),node('p',v.comments||'Sem comentário.'));detail.append(body);panel.append(detail);
    }
-   if(view==='juri'){page.querySelector('.jury-workspace > .jury-sheet')?.setAttribute('hidden','');page.querySelector('.jury-workspace > .group-card')?.setAttribute('hidden','');}
+   if(view==='juri'){page.querySelector('.jury-workspace > .jury-sheet')?.remove();page.querySelector('.jury-workspace > .group-card')?.remove();}
    if(view==='destaques'){const label=page.querySelector('.highlight-progress');if(label)label.textContent=rows.length+' avaliações gravadas';const empty=page.querySelector('.highlight-empty');if(empty)empty.textContent=rows.length?'Consulte as notas e os comentários abaixo.':'Aguardando avaliações dos apoiadores.';}
-   if(view==='resultados'){const table=page.querySelector('.result-board');if(table)table.hidden=true;const tabs=page.querySelector('.result-tabs');if(tabs)tabs.hidden=true;panel.prepend(node('p','Conferência das notas e comentários recebidos. A classificação final ainda não foi apurada.'));}
+   if(view==='resultados'){const table=page.querySelector('.result-board');if(table)table.remove();const tabs=page.querySelector('.result-tabs');if(tabs)tabs.remove();panel.prepend(node('p','Conferência das notas e comentários recebidos. A classificação final ainda não foi apurada.'));}
   }
  }
  const originalSetEventPage=window.setEventPage;
