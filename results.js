@@ -34,5 +34,28 @@
   }
   return rows;
  }
- if(typeof module==='object'&&module.exports)module.exports={classify};else root.PRISMA_RESULTS={classify};
+ function highlights(entries,assignments,evaluations,event){
+  const saved=new Map(evaluations.map(v=>[v.assignment_id,v])),rows=[];
+  for(const entry of entries.filter(e=>e.event===event)){
+   const p=entry.payload||{};
+   if([p.category,p.solo,p.collective,p.type].some(value=>normalize(value).includes('MOSTRA')))continue;
+   const formation=present(p.collective)?p.collective:present(p.solo)?'Solo':p.formation||'';
+   const supporters=assignments.filter(a=>a.enrollment_id===entry.id&&a.kind==='apoiador');
+   const valid=supporters.map(a=>saved.get(a.id)).filter(v=>Array.isArray(v?.scores)&&v.scores.length===2&&v.scores.every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=5&&n<=10));
+   rows.push({id:entry.id,title:p.choreo||'Apresentação',school:p.school||'',participant:p.certificate||p.participant||p.participants||'',formation,total:supporters.length,completed:valid.length,complete:supporters.length>0&&valid.length===supporters.length,participantMean:valid.length?average(valid.map(v=>v.scores[0])):null,choreographyMean:valid.length?average(valid.map(v=>v.scores[1])):null});
+  }
+  const groups=[];
+  function rank(label,candidates,metric){
+   const ready=candidates.length>0&&candidates.every(row=>row.complete);
+   const ranked=candidates.map(row=>({...row,mean:row[metric],position:null,tied:false})).sort((a,b)=>a.mean===null?b.mean===null?0:1:b.mean===null?-1:b.mean-a.mean);
+   if(ready)ranked.forEach((row,index)=>{row.position=index&&equal(row.mean,ranked[index-1].mean)?ranked[index-1].position:index+1;row.tied=ranked.some(other=>other.id!==row.id&&equal(other.mean,row.mean));});
+   groups.push({label,ready,rows:ranked});
+  }
+  for(const formation of ['Solo','Dupla','Trio','Grupo'])rank(formation,rows.filter(row=>normalize(row.formation)===normalize(formation)),'participantMean');
+  rank('Coreografia',rows,'choreographyMean');
+  const unknown=rows.filter(row=>!['SOLO','DUPLA','TRIO','GRUPO'].includes(normalize(row.formation)));
+  if(unknown.length)rank('Formação a conferir',unknown,'participantMean');
+  return groups;
+ }
+ if(typeof module==='object'&&module.exports)module.exports={classify,highlights};else root.PRISMA_RESULTS={classify,highlights};
 }(typeof window==='undefined'?globalThis:window));

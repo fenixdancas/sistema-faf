@@ -110,7 +110,20 @@
     detail.append(body);panel.append(detail);
    }
    if(view==='juri'){page.querySelector('.jury-workspace > .jury-sheet')?.remove();page.querySelector('.jury-workspace > .group-card')?.remove();}
-   if(view==='destaques'){const label=page.querySelector('.highlight-progress');if(label)label.textContent=rows.length+' avaliações gravadas';const empty=page.querySelector('.highlight-empty');if(empty)empty.textContent=rows.length?'Consulte as notas e os comentários abaixo.':'Aguardando avaliações dos apoiadores.';}
+   if(view==='destaques'){
+    page.querySelector('.highlight-eval')?.remove();page.querySelector('.highlight-tabs')?.remove();
+    const result=page.querySelector('.highlight-result');
+    if(result){result.replaceChildren(node('h3','Apuração dos apoiadores'),node('p','A nota do participante e a nota da coreografia são apuradas separadamente pela média dos apoiadores. As posições aguardam todas as avaliações da respectiva lista.'));
+     for(const group of window.PRISMA_RESULTS.highlights(entries,assigned,evaluations,event)){
+      const section=node('section',undefined,'group-card');section.append(node('h4',group.label==='Solo'?'Solo — conferir Bailarina / Bailarino':group.label));
+      if(!group.rows.length)section.append(node('p','Nenhuma apresentação elegível.'));
+      else {if(!group.ready)section.append(node('p','Apuração parcial — aguardando avaliações dos apoiadores.'));
+       for(const row of group.rows){const detail=node('div',undefined,'compact-card');detail.append(node('p',row.title+' · '+row.school),node('p',row.completed+'/'+row.total+' avaliações · '+(row.mean===null?'Sem notas':(group.ready?'Média: ':'Média parcial: ')+row.mean.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}))));if(row.participant&&group.label!=='Coreografia')detail.append(node('p',row.participant));if(row.position!==null)detail.append(node('p',row.position+'ª posição'+(row.tied?' · Empate — decisão da administração pendente':'')));section.append(detail);}
+      }result.append(section);
+     }
+     result.append(node('p','Bailarina / Bailarino: conferir a identificação dos solos antes de definir os certificados. Revelação: critério de escolha pendente de definição pela organização.'));
+    }
+   }
    if(view==='resultados'){const table=page.querySelector('.result-board');if(table)table.remove();const tabs=page.querySelector('.result-tabs');if(tabs)tabs.remove();const result=node('section');result.setAttribute('aria-label','Classificação do júri');result.append(node('h3','Classificação do júri'),node('p','Média das 11 notas de cada jurado, seguida da média entre os jurados. A colocação aguarda todas as avaliações da categoria. Desempate pela média dos quatro itens de Técnica.'));
     const classified=window.PRISMA_RESULTS.classify(entries,assigned,evaluations,event);
     if(!classified.length)result.append(node('p','Nenhuma inscrição neste evento.'));
