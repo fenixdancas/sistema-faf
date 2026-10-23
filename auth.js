@@ -111,7 +111,11 @@
    }
    if(view==='juri'){page.querySelector('.jury-workspace > .jury-sheet')?.remove();page.querySelector('.jury-workspace > .group-card')?.remove();}
    if(view==='destaques'){const label=page.querySelector('.highlight-progress');if(label)label.textContent=rows.length+' avaliações gravadas';const empty=page.querySelector('.highlight-empty');if(empty)empty.textContent=rows.length?'Consulte as notas e os comentários abaixo.':'Aguardando avaliações dos apoiadores.';}
-   if(view==='resultados'){const table=page.querySelector('.result-board');if(table)table.remove();const tabs=page.querySelector('.result-tabs');if(tabs)tabs.remove();panel.prepend(node('p','Conferência das notas e comentários recebidos. A classificação final ainda não foi apurada.'));}
+   if(view==='resultados'){const table=page.querySelector('.result-board');if(table)table.remove();const tabs=page.querySelector('.result-tabs');if(tabs)tabs.remove();const result=node('section');result.setAttribute('aria-label','Classificação do júri');result.append(node('h3','Classificação do júri'),node('p','Média das 11 notas de cada jurado, seguida da média entre os jurados. A colocação aguarda todas as avaliações da categoria. Desempate pela média dos quatro itens de Técnica.'));
+    const classified=window.PRISMA_RESULTS.classify(entries,assigned,evaluations,event);
+    if(!classified.length)result.append(node('p','Nenhuma inscrição neste evento.'));
+    for(const row of classified){const detail=node('div',undefined,'group-card');detail.append(node('h4',row.title),node('p',[row.school,row.formation,row.level,row.category,row.modality].filter(Boolean).join(' · ')),node('p','Júri: '+row.completed+'/'+row.total+' avaliações · '+row.status));if(row.mean!==null)detail.append(node('p',(row.completed===row.total?'Média: ':'Média parcial: ')+row.mean.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' · Técnica: '+row.technical.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})));result.append(detail);}
+    panel.prepend(result);}
   }
  }
  const originalSetEventPage=window.setEventPage;

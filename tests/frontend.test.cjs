@@ -22,6 +22,7 @@ function setup(role,event='faft',userId='test-user',options={}){
   return {ok:true,json:async()=>value};
  };
  if(options.beforeInit)options.beforeInit(w,calls);
+ w.eval(fs.readFileSync('results.js','utf8'));
  w.eval(fs.readFileSync('auth.js','utf8'));
  const login=async()=>{
   w.openRoleLogin(role==='apoiador'?'supporter':'jury');
