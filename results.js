@@ -34,7 +34,7 @@
   }
   return rows;
  }
- function highlights(entries,assignments,evaluations,event){
+ function highlights(entries,assignments,evaluations,event,selections=[]){
   const saved=new Map(evaluations.map(v=>[v.assignment_id,v])),rows=[];
   for(const entry of entries.filter(e=>e.event===event)){
    const p=entry.payload||{};
@@ -42,16 +42,20 @@
    const formation=present(p.collective)?p.collective:present(p.solo)?'Solo':p.formation||'';
    const supporters=assignments.filter(a=>a.enrollment_id===entry.id&&a.kind==='apoiador');
    const valid=supporters.map(a=>saved.get(a.id)).filter(v=>Array.isArray(v?.scores)&&v.scores.length===2&&v.scores.every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=5&&n<=10));
-   rows.push({id:entry.id,title:p.choreo||'Apresentação',school:p.school||'',participant:p.certificate||p.participant||p.participants||'',formation,total:supporters.length,completed:valid.length,complete:supporters.length>0&&valid.length===supporters.length,participantMean:valid.length?average(valid.map(v=>v.scores[0])):null,choreographyMean:valid.length?average(valid.map(v=>v.scores[1])):null});
+   rows.push({id:entry.id,title:p.choreo||'Apresentação',school:p.school||'',participant:p.certificate||p.participant||p.participants||'',formation,soloLabel:selections.find(a=>a.event===event&&a.kind==='solo'&&a.enrollment_id===entry.id&&a.active)?.label||null,total:supporters.length,completed:valid.length,complete:supporters.length>0&&valid.length===supporters.length,participantMean:valid.length?average(valid.map(v=>v.scores[0])):null,choreographyMean:valid.length?average(valid.map(v=>v.scores[1])):null});
   }
   const groups=[];
-  function rank(label,candidates,metric){
-   const ready=candidates.length>0&&candidates.every(row=>row.complete);
+  function rank(label,candidates,metric,hold=false){
+   const ready=!hold&&candidates.length>0&&candidates.every(row=>row.complete);
    const ranked=candidates.map(row=>({...row,mean:row[metric],position:null,tied:false})).sort((a,b)=>a.mean===null?b.mean===null?0:1:b.mean===null?-1:b.mean-a.mean);
    if(ready)ranked.forEach((row,index)=>{row.position=index&&equal(row.mean,ranked[index-1].mean)?ranked[index-1].position:index+1;row.tied=ranked.some(other=>other.id!==row.id&&equal(other.mean,row.mean));});
    groups.push({label,ready,rows:ranked});
   }
-  for(const formation of ['Solo','Dupla','Trio','Grupo'])rank(formation,rows.filter(row=>normalize(row.formation)===normalize(formation)),'participantMean');
+  const pendingSolos=rows.filter(row=>normalize(row.formation)==='SOLO'&&!['bailarina','bailarino'].includes(row.soloLabel));
+  rank('Bailarina',rows.filter(row=>normalize(row.formation)==='SOLO'&&row.soloLabel==='bailarina'),'participantMean',pendingSolos.length>0);
+  rank('Bailarino',rows.filter(row=>normalize(row.formation)==='SOLO'&&row.soloLabel==='bailarino'),'participantMean',pendingSolos.length>0);
+  for(const formation of ['Dupla','Trio','Grupo'])rank(formation,rows.filter(row=>normalize(row.formation)===normalize(formation)),'participantMean');
+  if(pendingSolos.length)rank('Solos — identificação pendente',pendingSolos,'participantMean',true);
   rank('Coreografia',rows,'choreographyMean');
   const unknown=rows.filter(row=>!['SOLO','DUPLA','TRIO','GRUPO'].includes(normalize(row.formation)));
   if(unknown.length)rank('Formação a conferir',unknown,'participantMean');

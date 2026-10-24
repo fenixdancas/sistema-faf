@@ -99,3 +99,24 @@ test('administration reads saved scores and comments, separates events, refreshe
   rows=[];w.setEventPage('faft','juri');await new Promise(r=>setTimeout(r,0));assert.ok(jury.textContent.includes('Nenhuma avaliação'));await w.prismaLogout();assert.equal(w.document.querySelectorAll('.prisma-admin-evaluations').length,0);
  }finally{t.close()}
 });
+
+test('admin manual Revelation and solo labels save, reopen, edit, soft-remove and clear on logout',async()=>{
+ let awards=[],clock=0;const entries=[{id:'solo-entry',event:'faft',payload:{choreo:'Solo iniciante',solo:'Estrela',participants:'Pessoa de teste - 9 anos'}}];
+ const t=setup('admin','faft','admin-test',{beforeInit:w=>{
+  const original=w.fetch;w.fetch=async(path,options={})=>{
+   if(path.includes('/prisma_enrollments?select='))return {ok:true,json:async()=>entries};
+   if(path.includes('/prisma_award_selections?'))return {ok:true,json:async()=>JSON.parse(JSON.stringify(awards))};
+   if(path.endsWith('/prisma_admin_save_award')){const b=JSON.parse(options.body),r={id:b.p_id||'award-'+(++clock),event:b.p_event,kind:b.p_kind,enrollment_id:b.p_entry,label:b.p_label,participant_name:b.p_name,notes:b.p_notes,active:b.p_active,updated_at:String(++clock)};awards=awards.filter(a=>a.id!==r.id).concat(r);return {ok:true,json:async()=>r};}
+   return original(path,options);
+  };
+ }});
+ try{const w=t.w;w.document.getElementById('prismaEmail').value='test@example.test';w.document.getElementById('prismaPassword').value='synthetic';await w.enterFaF();await new Promise(r=>setTimeout(r,0));
+  const root=()=>w.document.querySelector('#faft-destaques [aria-label="Indicações administrativas"]');
+  const details=text=>[...root().querySelectorAll('details')].find(d=>d.querySelector('summary').textContent.includes(text));
+  let f=details('Nova indicação').querySelector('form');f.querySelector('[aria-label="Categoria da indicação"]').value='bailarina';f.querySelector('[aria-label="Apresentação da indicação"]').value='solo-entry';f.querySelector('[aria-label="Nome para Revelação"]').value='Pessoa de teste';await f.onsubmit({preventDefault(){}});assert.equal(awards[0].kind,'revelacao');assert.ok(details('Pessoa de teste'));
+  w.setEventPage('faft','destaques');await new Promise(r=>setTimeout(r,0));f=details('Pessoa de teste').querySelector('form');assert.equal(f.querySelector('[aria-label="Nome para Revelação"]').value,'Pessoa de teste');f.querySelector('textarea').value='Iniciante indicada';await f.onsubmit({preventDefault(){}});assert.equal(awards[0].notes,'Iniciante indicada');
+  f=details('Solo iniciante').querySelector('form');f.querySelector('select').value='bailarino';await f.onsubmit({preventDefault(){}});assert.equal(awards.find(a=>a.kind==='solo').label,'bailarino');assert.ok(details('Solo iniciante').querySelector('summary').textContent.includes('Bailarino'));
+  f=details('Pessoa de teste').querySelector('form');await [...f.querySelectorAll('button')].find(b=>b.textContent==='Retirar indicação').onclick();assert.equal(awards.find(a=>a.kind==='revelacao').active,false);assert.ok(!details('Pessoa de teste'));assert.ok(!w.document.querySelector('#faf-destaques').textContent.includes('Pessoa de teste'));
+  await w.prismaLogout();assert.equal(w.document.querySelector('#faft-destaques .highlight-result').textContent,'');
+ }finally{t.close()}
+});

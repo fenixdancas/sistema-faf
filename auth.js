@@ -28,7 +28,7 @@
   }
   return value;
  }
- function clear(){adminGeneration++;adminRefresh=null;document.querySelectorAll('.prisma-admin-evaluations').forEach(el=>el.remove());session=null;profile=null;assignments=[];clearTimeout(refreshTimer);sessionStorage.removeItem(key);window.prismaLoadEnrollments?.([]);document.querySelectorAll('input[type=password]').forEach(e=>e.value='');}
+ function clear(){adminGeneration++;adminRefresh=null;document.querySelectorAll('.prisma-admin-evaluations').forEach(el=>el.remove());document.querySelectorAll('.highlight-result').forEach(el=>el.replaceChildren());session=null;profile=null;assignments=[];clearTimeout(refreshTimer);sessionStorage.removeItem(key);window.prismaLoadEnrollments?.([]);document.querySelectorAll('input[type=password]').forEach(e=>e.value='');}
  async function establish(tokens,expectedRole){
   session=tokens;
   try{
@@ -67,22 +67,23 @@
  async function readAdminEvaluations(generation){
   const lines=[...document.querySelectorAll('.admin-progress-line')];
   try{
-   const [people,entries,assigned,evaluations,edits]=await Promise.all([
+   const [people,entries,assigned,evaluations,edits,awards]=await Promise.all([
     request('/rest/v1/prisma_profiles?select=id,name,roles'),
     request('/rest/v1/prisma_enrollments?select=id,event,payload'),
     request('/rest/v1/prisma_assignments?select=id,enrollment_id,user_id,kind'),
     request('/rest/v1/prisma_evaluations?select=assignment_id,scores,comments,updated_at'),
-    request('/rest/v1/prisma_evaluation_edits?select=assignment_id,actor_id,before_value,after_value,created_at&order=created_at.desc')
+    request('/rest/v1/prisma_evaluation_edits?select=assignment_id,actor_id,before_value,after_value,created_at&order=created_at.desc'),
+    request('/rest/v1/prisma_award_selections?select=*&order=updated_at.desc')
    ]);
    if(generation!==adminGeneration||!has('admin'))return;
-   renderAdminEvaluations(people,entries,assigned,evaluations,edits);
+   renderAdminEvaluations(people,entries,assigned,evaluations,edits,awards);
    const jurors=people.filter(p=>p.roles.includes('jurada')).length;
    const saved=new Set(evaluations.map(e=>e.assignment_id));
    lines.forEach(line=>{const event=line.closest('#faftPending')?'faft':'faf';const ids=new Set(entries.filter(e=>e.event===event).map(e=>e.id));const values=line.querySelectorAll('strong');values[0].textContent=jurors+' cadastrados';values[1].textContent=assigned.filter(a=>a.kind==='jurada'&&ids.has(a.enrollment_id)&&saved.has(a.id)).length;});
   }catch{if(generation!==adminGeneration||!has('admin'))return;lines.forEach(line=>line.querySelectorAll('strong').forEach(el=>el.textContent='Consulta indisponível'));document.querySelectorAll('.prisma-admin-evaluations').forEach(el=>{el.textContent='Não foi possível consultar as avaliações. Reabra esta área para tentar novamente.';});}
  }
  const juryCriteria=['Execução dos movimentos','Leitura musical','Conhecimento rítmico','Deslocamentos','Expressão facial','Expressão corporal','Interpretação artística','Sincronia','Evolução','Criatividade','Adequação do figurino'];
- function renderAdminEvaluations(people,entries,assigned,evaluations,edits){
+ function renderAdminEvaluations(people,entries,assigned,evaluations,edits,awards=[],notice=null){
   const byPerson=new Map(people.map(p=>[p.id,p])),byEntry=new Map(entries.map(e=>[e.id,e])),byAssignment=new Map(assigned.map(a=>[a.id,a]));
   const records=evaluations.map(v=>{const a=byAssignment.get(v.assignment_id);return {v,a,e:byEntry.get(a?.enrollment_id),p:byPerson.get(a?.user_id)};}).filter(r=>r.a&&r.e);
   function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;}
@@ -114,14 +115,17 @@
     page.querySelector('.highlight-eval')?.remove();page.querySelector('.highlight-tabs')?.remove();
     const result=page.querySelector('.highlight-result');
     if(result){result.replaceChildren(node('h3','Apuração dos apoiadores'),node('p','A nota do participante e a nota da coreografia são apuradas separadamente pela média dos apoiadores. As posições aguardam todas as avaliações da respectiva lista.'));
-     for(const group of window.PRISMA_RESULTS.highlights(entries,assigned,evaluations,event)){
-      const section=node('section',undefined,'group-card');section.append(node('h4',group.label==='Solo'?'Solo — conferir Bailarina / Bailarino':group.label));
+     for(const group of window.PRISMA_RESULTS.highlights(entries,assigned,evaluations,event,awards)){
+      const section=node('section',undefined,'group-card');section.append(node('h4',group.label));
       if(!group.rows.length)section.append(node('p','Nenhuma apresentação elegível.'));
       else {if(!group.ready)section.append(node('p','Apuração parcial — aguardando avaliações dos apoiadores.'));
        for(const row of group.rows){const detail=node('div',undefined,'compact-card');detail.append(node('p',row.title+' · '+row.school),node('p',row.completed+'/'+row.total+' avaliações · '+(row.mean===null?'Sem notas':(group.ready?'Média: ':'Média parcial: ')+row.mean.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}))));if(row.participant&&group.label!=='Coreografia')detail.append(node('p',row.participant));if(row.position!==null)detail.append(node('p',row.position+'ª posição'+(row.tied?' · Empate — decisão da administração pendente':'')));section.append(detail);}
       }result.append(section);
      }
-     result.append(node('p','Bailarina / Bailarino: conferir a identificação dos solos antes de definir os certificados. Revelação: critério de escolha pendente de definição pela organização.'));
+     renderAwardForms(result,event,entries,awards,node,async body=>{
+      const generation=adminGeneration;const response=await request('/rest/v1/rpc/prisma_admin_save_award',{method:'POST',body});if(generation!==adminGeneration||!has('admin'))return;const saved=Array.isArray(response)?response[0]:response;if(!saved?.id)throw Error('Não foi possível recarregar a indicação. Reabra a área.');const index=awards.findIndex(a=>a.id===saved.id);if(index<0)awards.push(saved);else awards[index]=saved;renderAdminEvaluations(people,entries,assigned,evaluations,edits,awards,{event,message:body.p_active?'Registro salvo.':'Indicação retirada.'});
+     });
+     if(notice?.event===event){const message=node('p',notice.message);message.setAttribute('role','status');result.prepend(message);}
     }
    }
    if(view==='resultados'){const table=page.querySelector('.result-board');if(table)table.remove();const tabs=page.querySelector('.result-tabs');if(tabs)tabs.remove();const result=node('section');result.setAttribute('aria-label','Classificação do júri');result.append(node('h3','Classificação do júri'),node('p','Média das 11 notas de cada jurado, seguida da média entre os jurados. A colocação aguarda todas as avaliações da categoria. Desempate pela média dos quatro itens de Técnica.'));
@@ -130,6 +134,33 @@
     for(const row of classified){const detail=node('div',undefined,'group-card');detail.append(node('h4',row.title),node('p',[row.school,row.formation,row.level,row.category,row.modality].filter(Boolean).join(' · ')),node('p','Júri: '+row.completed+'/'+row.total+' avaliações · '+row.status));if(row.mean!==null)detail.append(node('p',(row.completed===row.total?'Média: ':'Média parcial: ')+row.mean.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' · Técnica: '+row.technical.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})));result.append(detail);}
     panel.prepend(result);}
   }
+ }
+ function renderAwardForms(root,event,entries,awards,node,save){
+  const norm=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  const eligible=entries.filter(e=>e.event===event&&![e.payload?.category,e.payload?.solo,e.payload?.collective,e.payload?.type].some(v=>norm(v).includes('MOSTRA')));
+  const solo=e=>norm(e.payload?.formation)==='SOLO'||(!e.payload?.collective||['NAO SE APLICA',''].includes(norm(e.payload.collective)))&&e.payload?.solo&&norm(e.payload.solo)!=='NAO SE APLICA';
+  const formSection=node('section',undefined,'group-card');formSection.setAttribute('aria-label','Indicações administrativas');root.append(formSection);
+  function select(label,options,value){const el=node('select');el.setAttribute('aria-label',label);el.required=true;el.append(node('option','Selecione'));el.firstChild.value='';for(const [id,text] of options){const opt=node('option',text);opt.value=id;el.append(opt);}el.value=value||'';return el;}
+  function field(form,label,input){const wrapper=node('label',label,'role-comments');wrapper.append(input);form.append(wrapper);}
+  function form(kind,entry,existing){
+   const f=node('form',undefined,'compact-card');const category=select('Categoria da indicação',[['bailarina','Bailarina'],['bailarino','Bailarino']],existing?.label);field(f,'Categoria',category);
+   const entryInput=select('Apresentação da indicação',eligible.map(e=>[e.id,e.payload?.choreo||'Apresentação']),entry?.id||existing?.enrollment_id);if(kind==='revelacao')field(f,'Apresentação',entryInput);
+   const name=node('input');name.type='text';name.maxLength=300;name.value=existing?.participant_name||'';name.required=kind==='revelacao';name.setAttribute('aria-label','Nome para Revelação');
+   const notes=node('textarea');notes.rows=2;notes.maxLength=2000;notes.value=existing?.notes||'';notes.setAttribute('aria-label','Observação da indicação');
+   if(kind==='revelacao'){field(f,'Nome da bailarina ou do bailarino',name);field(f,'Observação (opcional)',notes);const people=node('p');const showPeople=()=>{const p=eligible.find(e=>e.id===entryInput.value)?.payload||{};people.textContent='Participantes inscritos: '+(p.participants||p.participant||'Consulte a inscrição.');};entryInput.onchange=showPeople;showPeople();f.append(people);}
+   const button=node('button','Salvar indicação','save-evaluation');button.type='submit';const status=node('p');status.setAttribute('role','status');f.append(button,status);
+   const persist=async active=>{if(!category.value||!entryInput.value||kind==='revelacao'&&!name.value.trim()){status.textContent='Preencha a categoria, a apresentação e o nome quando solicitado.';return;}button.disabled=true;status.textContent='Salvando…';try{await save({p_id:existing?.id||null,p_event:event,p_entry:entryInput.value,p_kind:kind,p_label:category.value,p_name:name.value.trim(),p_notes:notes.value,p_active:active,p_expected_updated_at:existing?.updated_at||null});}catch(error){status.textContent=error.message;button.disabled=false;}};
+   f.onsubmit=ev=>{ev.preventDefault();return persist(true);};
+   if(existing&&kind==='revelacao'){const remove=node('button','Retirar indicação');remove.type='button';remove.onclick=()=>persist(false);f.append(remove);}
+   return f;
+  }
+  formSection.append(node('h3','Identificação dos solos'));
+  const solos=eligible.filter(solo);if(!solos.length)formSection.append(node('p','Nenhum solo inscrito neste evento.'));
+  for(const entry of solos){const block=node('details');const existing=awards.find(a=>a.kind==='solo'&&a.enrollment_id===entry.id&&a.active);block.append(node('summary',(entry.payload?.choreo||'Solo')+' · '+(existing?.label==='bailarina'?'Bailarina':existing?.label==='bailarino'?'Bailarino':'Identificação pendente')),form('solo',entry,existing));formSection.append(block);}
+  formSection.append(node('h3','Revelação — indicação manual'),node('p','Indicação da administração para bailarinas e bailarinos iniciantes. Não depende das notas do júri ou dos apoiadores.'));
+  const selected=awards.filter(a=>a.event===event&&a.kind==='revelacao'&&a.active);if(!selected.length)formSection.append(node('p','Nenhuma indicação registrada.'));
+  for(const existing of selected){const detail=node('details');detail.append(node('summary',existing.participant_name+' · '+(existing.label==='bailarina'?'Bailarina Revelação':'Bailarino Revelação')),form('revelacao',null,existing));formSection.append(detail);}
+  if(eligible.length){const add=node('details');add.append(node('summary','Nova indicação de Revelação'),form('revelacao'));formSection.append(add);}else formSection.append(node('p','As indicações estarão disponíveis após o cadastro de inscrições.'));
  }
  const originalSetEventPage=window.setEventPage;
  window.setEventPage=function(event,view){
