@@ -28,7 +28,16 @@
   }
   return value;
  }
- function clear(){adminGeneration++;adminRefresh=null;document.querySelectorAll('.prisma-admin-evaluations').forEach(el=>el.remove());document.querySelectorAll('.highlight-result').forEach(el=>el.replaceChildren());session=null;profile=null;assignments=[];clearTimeout(refreshTimer);sessionStorage.removeItem(key);window.prismaLoadEnrollments?.([]);document.querySelectorAll('input[type=password]').forEach(e=>e.value='');}
+ function clear(){adminGeneration++;adminRefresh=null;document.querySelectorAll('.prisma-admin-evaluations').forEach(el=>el.remove());document.querySelectorAll('.highlight-result').forEach(el=>el.replaceChildren());session=null;profile=null;assignments=[];clearTimeout(refreshTimer);sessionStorage.removeItem(key);window.prismaLoadEnrollments?.([]);document.querySelectorAll('input[type=password]').forEach(e=>e.value='');
+  // Remove private evaluation data as well as tokens when a session ends.
+  document.querySelectorAll('#juryArea,#supporterArea').forEach(root=>{
+   root.querySelectorAll('input[type=number],textarea').forEach(el=>el.value='');
+   root.querySelector('.prisma-assignment-select')?.replaceChildren();
+   root.querySelectorAll('.jury-user-heading span,.role-presentation span').forEach(el=>el.textContent='');
+   root.querySelectorAll('.jury-progress span').forEach(el=>el.textContent='0');
+   const save=root.querySelector('.save-evaluation');if(save)save.disabled=true;
+  });
+ }
  async function establish(tokens,expectedRole){
   session=tokens;
   try{

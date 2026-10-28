@@ -120,3 +120,17 @@ test('admin manual Revelation and solo labels save, reopen, edit, soft-remove an
   await w.prismaLogout();assert.equal(w.document.querySelector('#faft-destaques .highlight-result').textContent,'');
  }finally{t.close()}
 });
+
+for(const role of ['jurada','apoiador'])test(role+': logout removes private evaluation fields from the DOM',async()=>{
+ const t=setup(role);try{
+  await t.login();const root=t.w.document.getElementById(role==='jurada'?'juryArea':'supporterArea');
+  root.querySelectorAll('input[type=number]').forEach(el=>el.value='8');root.querySelector('textarea').value='Comentário sintético privado';
+  await t.w.prismaLogout();
+  assert.equal(root.querySelector('textarea').value,'');
+  assert.equal(root.querySelector('select').options.length,0);
+  assert.ok([...root.querySelectorAll('input[type=number]')].every(el=>el.value===''));
+  assert.equal(root.querySelector('.jury-user-heading span').textContent,'');
+  assert.equal(t.w.sessionStorage.getItem('prisma_auth_session_v1'),null);
+  assert.ok(t.calls.some(c=>c.path.endsWith('/auth/v1/logout')));
+ }finally{t.close()}
+});
