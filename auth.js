@@ -10,8 +10,10 @@
  function status(message){const roleLogin=document.getElementById('juryLogin')?.classList.contains('on');const p=document.getElementById(roleLogin?'roleLoginStatus':'prismaLoginStatus');if(p)p.textContent=message;if(!roleLogin){const mobile=document.getElementById('prismaMobileStatus');if(mobile)mobile.textContent=message;}}
  async function request(path,{method='GET',body,authenticated=true}={}){
   if(!ready)throw Error('A autenticação ainda precisa ser conectada ao projeto do PRISMA.');
+  const generation=adminGeneration;
   const response=await fetch(config.supabaseUrl+path,{method,headers:{apikey:config.publishableKey,'Content-Type':'application/json',...(authenticated&&session?{Authorization:'Bearer '+session.access_token}:{})},...(body?{body:JSON.stringify(body)}:{})});
   const value=await response.json().catch(()=>null);
+  if(generation!==adminGeneration)throw Error('A sessão foi encerrada. Entre novamente.');
   if(!response.ok){
    const code=value?.code||value?.error_code;
    const detail=[value?.msg,value?.message,value?.error_description,value?.error].filter(v=>typeof v==='string').join(' ').toLowerCase();
@@ -39,6 +41,7 @@
   });
  }
  async function establish(tokens,expectedRole){
+  const generation=adminGeneration;
   session=tokens;
   try{
    const user=await request('/auth/v1/user');
@@ -48,9 +51,9 @@
    clearTimeout(refreshTimer);
    refreshTimer=setTimeout(refresh,Math.max(1000,((tokens.expires_in||3600)-60)*1000));
    return profile;
-  }catch(e){clear();throw e;}
+  }catch(e){if(generation===adminGeneration)clear();throw e;}
  }
- async function refresh(){try{const tokens=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',authenticated:false,body:{refresh_token:session.refresh_token}});await establish(tokens);}catch{clear();rawShow('login');status('A sessão terminou. Entre novamente.');}}
+ async function refresh(){const generation=adminGeneration;try{const tokens=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',authenticated:false,body:{refresh_token:session.refresh_token}});await establish(tokens);}catch{if(generation!==adminGeneration)return;clear();rawShow('login');status('A sessão terminou. Entre novamente.');}}
  window.showScreen=function(id){
   const admin=['app','faftPending','select'];
   if(admin.includes(id)&&!has('admin'))return rawShow('login');

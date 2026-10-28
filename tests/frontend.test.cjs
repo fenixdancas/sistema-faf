@@ -134,3 +134,39 @@ for(const role of ['jurada','apoiador'])test(role+': logout removes private eval
   assert.ok(t.calls.some(c=>c.path.endsWith('/auth/v1/logout')));
  }finally{t.close()}
 });
+
+test('a delayed refresh cannot restore a session after logout',async()=>{
+ let refresh,release,started;const barrier=new Promise(r=>started=r);
+ const t=setup('jurada','faft','test-user',{beforeInit:w=>{
+  const timer=w.setTimeout.bind(w);w.setTimeout=(fn,ms,...args)=>ms>1000000?(refresh=fn,0):timer(fn,ms,...args);
+  const original=w.fetch;w.fetch=async(path,options)=>{if(path.includes('grant_type=refresh_token')){started();await new Promise(r=>release=r);}return original(path,options);};
+ }});
+ try{await t.login();const pending=refresh();await barrier;await t.w.prismaLogout();release();await pending;
+  assert.equal(t.w.sessionStorage.getItem('prisma_auth_session_v1'),null);
+  t.w.showScreen('juryArea');assert.equal(t.w.document.getElementById('juryArea').classList.contains('on'),false);
+ }finally{t.close()}
+});
+
+test('a delayed admin enrollment response cannot restore private data after logout',async()=>{
+ let release,started;const barrier=new Promise(r=>started=r),loaded=[];
+ const t=setup('admin','faft','admin-test',{beforeInit:w=>{
+  w.prismaLoadEnrollments=rows=>loaded.push(rows);
+  const original=w.fetch;w.fetch=async(path,options)=>{if(path.includes('prisma_enrollments?event=')){started();await new Promise(r=>release=r);return {ok:true,json:async()=>[{payload:{choreo:'Privado sintético'}}]};}return original(path,options);};
+ }});
+ try{const w=t.w;w.document.getElementById('prismaEmail').value='test@example.test';w.document.getElementById('prismaPassword').value='synthetic';const pending=w.enterFaF();await barrier;await w.prismaLogout();release();await pending;
+  assert.equal(loaded.some(rows=>rows.some(r=>r.choreo==='Privado sintético')),false);
+  assert.equal(w.sessionStorage.getItem('prisma_auth_session_v1'),null);
+ }finally{t.close()}
+});
+
+test('a delayed refresh from a closed session does not clear a new login',async()=>{
+ let refresh,release,started;const barrier=new Promise(r=>started=r);
+ const t=setup('jurada','faft','test-user',{beforeInit:w=>{
+  const timer=w.setTimeout.bind(w);w.setTimeout=(fn,ms,...args)=>ms>1000000?(refresh=fn,0):timer(fn,ms,...args);
+  const original=w.fetch;w.fetch=async(path,options)=>{if(path.includes('grant_type=refresh_token')){started();await new Promise(r=>release=r);}return original(path,options);};
+ }});
+ try{await t.login();const pending=refresh();await barrier;await t.w.prismaLogout();await t.login();release();await pending;
+  assert.notEqual(t.w.sessionStorage.getItem('prisma_auth_session_v1'),null);
+  assert.equal(t.w.document.getElementById('juryArea').classList.contains('on'),true);
+ }finally{t.close()}
+});
